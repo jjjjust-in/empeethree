@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Empeethree</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Title Bar -->
+  <div id="titlebar">
+    <div id="titlebar-controls">
+      <button class="tb-btn close"    onclick="window.electronAPI.windowClose()"    title="Close"></button>
+      <button class="tb-btn minimize" onclick="window.electronAPI.windowMinimize()" title="Minimize"></button>
+      <button class="tb-btn maximize" onclick="window.electronAPI.windowMaximize()" title="Maximize"></button>
+    </div>
+    <div id="titlebar-right">
+      <button class="tb-icon-btn" id="btn-settings" title="Change music folder">⚙</button>
+    </div>
+  </div>
+
+  <!-- Splash Screen -->
+  <div id="splash">
+    <pre id="splash-logo"></pre>
+    <div id="splash-hint"><span class="splash-arrow">›</span> <span id="splash-msg">initializing…</span></div>
+  </div>
+
+  <!-- Main Layout -->
+  <div id="app">
+
+    <!-- Left: Search + Playlist Panel -->
+    <div id="playlist-panel">
+
+      <!-- Logo above search -->
+      <div id="panel-logo">
+        <pre id="panel-logo-pre"></pre>
+      </div>
+
+      <!-- Search bar -->
+      <div id="search-area">
+        <div id="search-box">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" placeholder="search library..." autocomplete="off" spellcheck="false" />
+          <button id="btn-clear-search" title="Clear">✕</button>
+        </div>
+      </div>
+
+      <!-- No root folder prompt -->
+      <div id="no-root">
+        <pre class="empty-art">
+  ╔══════════════╗
+  ║  ♪  ♫  ♩  ♬ ║
+  ║              ║
+  ║  no music    ║
+  ║  folder set  ║
+  ╚══════════════╝</pre>
+        <p class="empty-hint">set a folder to begin searching</p>
+        <button class="cmd-btn accent" id="btn-set-root-empty">set music folder</button>
+      </div>
+
+      <!-- Search results -->
+      <div id="search-results" style="display:none"></div>
+
+      <!-- Queue -->
+      <div id="queue-section">
+        <div id="queue-header">
+          <span class="panel-label">── QUEUE</span>
+          <div class="panel-actions">
+            <button class="cmd-btn" id="btn-open-files" title="Add files">+ files</button>
+            <button class="cmd-btn danger" id="btn-clear-queue" title="Clear queue">clear</button>
+          </div>
+        </div>
+        <div id="playlist"></div>
+        <div id="playlist-empty">
+          <p class="empty-hint">queue is empty</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: Player Panel -->
+    <div id="player-panel">
+
+      <!-- Now Playing -->
+      <div id="now-playing">
+        <div class="np-label">NOW PLAYING</div>
+        <div id="track-name">─── no track selected ───</div>
+        <div id="track-meta">
+          <span id="track-index">00</span> / <span id="track-total">00</span>
+          &nbsp;|&nbsp; <span id="track-format">───</span>
+        </div>
+      </div>
+
+      <!-- Visualizer -->
+      <div id="visualizer-wrap">
+        <canvas id="visualizer"></canvas>
+        <div id="vis-mode-label">WAVEFORM</div>
+      </div>
+
+      <!-- Seek -->
+      <div id="seek-row">
+        <span id="time-current">0:00</span>
+        <div id="seek-bar-wrap">
+          <div id="seek-bar-bg">
+            <div id="seek-bar-fill"></div>
+            <div id="seek-bar-thumb"></div>
+          </div>
+        </div>
+        <span id="time-total">0:00</span>
+      </div>
+
+      <!-- Controls -->
+      <div id="controls">
+        <button class="ctrl-btn" id="btn-shuffle" title="Shuffle">⇌</button>
+        <button class="ctrl-btn" id="btn-prev"    title="Previous">⏮</button>
+        <button class="ctrl-btn primary" id="btn-play" title="Play/Pause">▶</button>
+        <button class="ctrl-btn" id="btn-next"    title="Next">⏭</button>
+        <button class="ctrl-btn" id="btn-repeat"  title="Repeat">↻</button>
+      </div>
+
+      <!-- Volume -->
+      <div id="volume-row">
+        <span class="vol-label">VOL</span>
+        <div id="vol-bar-wrap">
+          <div id="vol-bar-bg">
+            <div id="vol-bar-fill"></div>
+            <div id="vol-bar-thumb"></div>
+          </div>
+        </div>
+        <span id="vol-value">80%</span>
+      </div>
+
+      <!-- Status -->
+      <div id="statusbar">
+        <span id="status-msg">▸ ready</span>
+        <span id="status-mode"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
