@@ -1,7 +1,11 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs   = require('fs');
 const os   = require('os');
+
+if (process.env.NODE_ENV !== 'production') {
+  require('electron-reload')(__dirname, { electron: require('path').join(__dirname, 'node_modules', '.bin', 'electron') });
+}
 
 let mainWindow;
 const AUDIO_EXTS = new Set(['.mp3', '.wav', '.ogg', '.flac', '.m4a']);
@@ -14,6 +18,15 @@ function loadConfig() {
 }
 function saveConfig(data) {
   fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
+}
+
+const playlistsPath = path.join(app.getPath('userData'), 'playlists.json');
+function loadPlaylists() {
+  try { return JSON.parse(fs.readFileSync(playlistsPath, 'utf8')); }
+  catch { return []; }
+}
+function savePlaylists(data) {
+  fs.writeFileSync(playlistsPath, JSON.stringify(data, null, 2));
 }
 
 // ── Library Index ──────────────────────────────────────────────────────────
@@ -108,6 +121,15 @@ function createWindow() {
     },
   });
   mainWindow.loadFile('index.html');
+
+  // Open external links in the system browser instead of navigating the app
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  mainWindow.webContents.on('will-navigate', (e, url) => {
+    if (!url.startsWith('file://')) { e.preventDefault(); shell.openExternal(url); }
+  });
 }
 
 app.whenReady().then(() => {
@@ -122,6 +144,11 @@ app.on('window-all-closed', () => {
 
 // ── IPC ────────────────────────────────────────────────────────────────────
 ipcMain.handle('get-config', () => loadConfig());
+ipcMain.handle('set-config', (_, patch) => {
+  const config = loadConfig();
+  Object.assign(config, patch);
+  saveConfig(config);
+});
 
 ipcMain.handle('set-root-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -160,6 +187,24 @@ ipcMain.handle('open-files', async () => {
     artist:   '',
     album:    '',
   }));
+});
+
+ipcMain.handle('get-playlists', () => loadPlaylists());
+
+ipcMain.handle('save-playlist', async (_, { name, tracks }) => {
+  const lists = loadPlaylists();
+  const existing = lists.findIndex(p => p.name === name);
+  const entry = { name, tracks, savedAt: Date.now() };
+  if (existing >= 0) lists[existing] = entry;
+  else lists.push(entry);
+  savePlaylists(lists);
+  return lists;
+});
+
+ipcMain.handle('delete-playlist', async (_, name) => {
+  const lists = loadPlaylists().filter(p => p.name !== name);
+  savePlaylists(lists);
+  return lists;
 });
 
 ipcMain.on('window-minimize', () => mainWindow.minimize());

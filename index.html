@@ -16,7 +16,64 @@
       <button class="tb-btn maximize" onclick="window.electronAPI.windowMaximize()" title="Maximize"></button>
     </div>
     <div id="titlebar-right">
-      <button class="tb-icon-btn" id="btn-settings" title="Change music folder">⚙</button>
+      <button class="tb-icon-btn" id="btn-settings" title="Change music folder"><svg class="tb-svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 20C3.45 20 2.97917 19.8042 2.5875 19.4125C2.19583 19.0208 2 18.55 2 18V6C2 5.45 2.19583 4.97917 2.5875 4.5875C2.97917 4.19583 3.45 4 4 4H10L12 6H20C20.55 6 21.0208 6.19583 21.4125 6.5875C21.8042 6.97917 22 7.45 22 8V18C22 18.55 21.8042 19.0208 21.4125 19.4125C21.0208 19.8042 20.55 20 20 20H4Z" fill="currentColor"/></svg></button>
+      <button class="tb-icon-btn" id="btn-app-settings" title="Settings"><svg class="tb-svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.92c.04-.34.07-.69.07-1.08 0-.39-.03-.74-.07-1.08l2.32-1.82c.21-.16.27-.45.13-.68l-2.2-3.81c-.13-.23-.42-.31-.65-.23l-2.74 1.1c-.57-.44-1.18-.8-1.86-1.07L14 2.42C13.96 2.18 13.74 2 13.5 2h-3c-.24 0-.46.18-.5.42l-.41 2.49c-.68.27-1.29.63-1.86 1.07L4.99 4.88c-.23-.09-.52 0-.65.23L2.14 8.92c-.14.23-.08.52.13.68L4.59 11.5c-.04.34-.07.69-.07 1.08 0 .39.03.74.07 1.08L2.27 15.48c-.21.16-.27.45-.13.68l2.2 3.81c.13.23.42.31.65.23l2.74-1.1c.57.44 1.18.8 1.86 1.07l.41 2.49c.04.24.26.42.5.42h3c.24 0 .46-.18.5-.42l.41-2.49c.68-.27 1.29-.63 1.86-1.07l2.74 1.1c.23.09.52 0 .65-.23l2.2-3.81c.14-.23.08-.52-.13-.68l-2.32-1.82z" fill="currentColor"/></svg></button>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="hidden">
+      <div id="settings-box">
+        <div id="settings-header">
+          <span id="settings-title">SETTINGS</span>
+          <button id="settings-close">✕</button>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-label">MUSIC FOLDER</div>
+          <div id="settings-folder-name"></div>
+          <button class="settings-action-btn" id="settings-set-folder">change folder…</button>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-label">DEFAULT VISUALIZER</div>
+          <div class="settings-radio-group">
+            <label class="settings-radio"><input type="radio" name="default-viz" value="0"> GLYPH</label>
+            <label class="settings-radio"><input type="radio" name="default-viz" value="1"> BARS</label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-label">COLOR THEME</div>
+          <div class="settings-radio-group">
+            <label class="settings-radio"><input type="radio" name="color-theme" value="amber"> AMBER</label>
+            <label class="settings-radio"><input type="radio" name="color-theme" value="green"> GREEN</label>
+            <label class="settings-radio"><input type="radio" name="color-theme" value="blue"> BLUE</label>
+            <label class="settings-radio"><input type="radio" name="color-theme" value="red"> RED</label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-label">GETTING STARTED</div>
+          <ol class="settings-instructions">
+            <li>click the folder icon to set your music folder</li>
+            <li>search your library and add tracks to the queue</li>
+            <li>press play to start listening</li>
+          </ol>
+          <div class="settings-shortcuts">
+            <div class="settings-shortcut-label">KEYBOARD SHORTCUTS</div>
+            <div class="settings-shortcut-row"><span>space</span><span>play / pause</span></div>
+            <div class="settings-shortcut-row"><span>← →</span><span>seek 5s</span></div>
+            <div class="settings-shortcut-row"><span>↑ ↓</span><span>volume</span></div>
+            <div class="settings-shortcut-row"><span>N / P</span><span>next / previous</span></div>
+          </div>
+        </div>
+
+        <div class="settings-section settings-section-about">
+          <div class="settings-about-name">EMPEETHREE</div>
+          <div class="settings-about-version">v1.0.0</div>
+          <div class="settings-about-credit">by <a class="settings-about-link" href="https://github.com/jjjjust-in" target="_blank">@JJJJUSTIN</a></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -34,7 +91,7 @@
 
       <!-- Logo above search -->
       <div id="panel-logo">
-        <pre id="panel-logo-pre"></pre>
+        <canvas id="panel-logo-canvas" style="display:block;width:100%;"></canvas>
       </div>
 
       <!-- Search bar -->
@@ -62,18 +119,41 @@
       <!-- Search results -->
       <div id="search-results" style="display:none"></div>
 
-      <!-- Queue -->
-      <div id="queue-section">
-        <div id="queue-header">
-          <span class="panel-label">── QUEUE</span>
-          <div class="panel-actions">
-            <button class="cmd-btn" id="btn-open-files" title="Add files">+ files</button>
-            <button class="cmd-btn danger" id="btn-clear-queue" title="Clear queue">clear</button>
+      <!-- Panel tabs -->
+      <div id="panel-tabs">
+        <button class="panel-tab active" data-tab="queue">QUEUE</button>
+        <button class="panel-tab" data-tab="artists">ARTISTS</button>
+        <button class="panel-tab" data-tab="playlists">PLAYLISTS</button>
+      </div>
+
+      <!-- Tab: Queue -->
+      <div id="tab-queue" class="tab-panel active">
+        <div id="queue-section">
+          <div id="queue-header">
+            <span class="panel-label"><span id="queue-name" contenteditable="true" spellcheck="false" title="Click to rename"></span></span>
+            <div class="panel-actions">
+<button class="cmd-btn" id="btn-save-queue" title="Save queue as playlist">save</button>
+              <button class="cmd-btn danger" id="btn-clear-queue" title="Clear queue">clear</button>
+            </div>
+          </div>
+          <div id="playlist"></div>
+          <div id="playlist-empty">
+            <p class="empty-hint">queue is empty</p>
           </div>
         </div>
-        <div id="playlist"></div>
-        <div id="playlist-empty">
-          <p class="empty-hint">queue is empty</p>
+      </div>
+
+      <!-- Tab: Artists -->
+      <div id="tab-artists" class="tab-panel">
+        <div id="browse-tree"></div>
+      </div>
+
+
+      <!-- Tab: Playlists -->
+      <div id="tab-playlists" class="tab-panel">
+        <div id="playlists-list"></div>
+        <div id="playlists-empty">
+          <p class="empty-hint">no saved playlists</p>
         </div>
       </div>
 
@@ -95,7 +175,10 @@
       <!-- Visualizer -->
       <div id="visualizer-wrap">
         <canvas id="visualizer"></canvas>
-        <div id="vis-mode-label">WAVEFORM</div>
+        <div id="viz-icons">
+          <button class="viz-icon-btn" data-mode="0" title="Glyph">⠿</button>
+<button class="viz-icon-btn" data-mode="1" title="Bars">▌▌▌</button>
+        </div>
       </div>
 
       <!-- Seek -->
@@ -112,11 +195,11 @@
 
       <!-- Controls -->
       <div id="controls">
-        <button class="ctrl-btn" id="btn-shuffle" title="Shuffle">⇌</button>
+        <button class="ctrl-btn ctrl-svg-btn" id="btn-shuffle" title="Shuffle"><svg class="ctrl-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M32 6H42M42 6V16M42 6L8 40M42 32V42M42 42H32M42 42L30 30M8 8L18 18" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <button class="ctrl-btn" id="btn-prev"    title="Previous">⏮</button>
         <button class="ctrl-btn primary" id="btn-play" title="Play/Pause">▶</button>
         <button class="ctrl-btn" id="btn-next"    title="Next">⏭</button>
-        <button class="ctrl-btn" id="btn-repeat"  title="Repeat">↻</button>
+        <button class="ctrl-btn ctrl-svg-btn" id="btn-repeat"  title="Repeat"><svg class="ctrl-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 8.00015V20.0002M2 20.0002H14M2 20.0002L11.28 11.2802C13.4295 9.12958 16.0887 7.55856 19.0096 6.7137C21.9305 5.86883 25.0178 5.77765 27.9834 6.44867C30.9491 7.11968 33.6964 8.53102 35.9691 10.551C38.2417 12.571 39.9657 15.1337 40.98 18.0002M46 40.0002V28.0002M46 28.0002H34M46 28.0002L36.72 36.7202C34.5705 38.8707 31.9113 40.4417 28.9904 41.2866C26.0695 42.1315 22.9822 42.2226 20.0166 41.5516C17.0509 40.8806 14.3036 39.4693 12.0309 37.4493C9.75827 35.4293 8.03434 32.8666 7.02 30.0002" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
 
       <!-- Volume -->

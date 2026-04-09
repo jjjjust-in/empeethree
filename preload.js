@@ -2,10 +2,14 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getConfig:      ()                    => ipcRenderer.invoke('get-config'),
+  setConfig:      (patch)               => ipcRenderer.invoke('set-config', patch),
   setRootFolder:  ()                    => ipcRenderer.invoke('set-root-folder'),
   buildIndex:     (rootPath)            => ipcRenderer.invoke('build-index', rootPath),
   search:         (index, query)        => ipcRenderer.invoke('search', { index, query }),
   openFiles:      ()                    => ipcRenderer.invoke('open-files'),
+  getPlaylists:   ()                    => ipcRenderer.invoke('get-playlists'),
+  savePlaylist:   (name, tracks)        => ipcRenderer.invoke('save-playlist', { name, tracks }),
+  deletePlaylist: (name)                => ipcRenderer.invoke('delete-playlist', name),
   windowMinimize: ()                    => ipcRenderer.send('window-minimize'),
   windowMaximize: ()                    => ipcRenderer.send('window-maximize'),
   windowClose:    ()                    => ipcRenderer.send('window-close'),
