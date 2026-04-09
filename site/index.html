@@ -324,8 +324,7 @@
 
       drawElements(og, 1.0);
 
-      ctx.fillStyle = '#0d0d0d';
-      ctx.fillRect(0, 0, W, H);
+      ctx.clearRect(0, 0, W, H);
 
       ctx.save(); ctx.filter = 'blur(18px)'; ctx.globalAlpha = 0.55; ctx.drawImage(off, 0, 0, W, H); ctx.restore();
       ctx.save(); ctx.filter = 'blur(6px)';  ctx.globalAlpha = 0.70; ctx.drawImage(off, 0, 0, W, H); ctx.restore();
