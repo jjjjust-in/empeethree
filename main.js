@@ -3,7 +3,7 @@ const path = require('path');
 const fs   = require('fs');
 const os   = require('os');
 
-if (process.env.NODE_ENV !== 'production') {
+if (!app.isPackaged) {
   require('electron-reload')(__dirname, { electron: require('path').join(__dirname, 'node_modules', '.bin', 'electron') });
 }
 

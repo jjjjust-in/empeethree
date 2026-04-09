@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EMPEETHREE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber: #e8a020;
+      --amber-dim: #a06810;
+      --bg: #0e0e0e;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--amber);
+      overflow: hidden;
+    }
+
+    /* scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0,0,0,0.12) 2px,
+        rgba(0,0,0,0.12) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* ── COVER ── */
+    #cover {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      background: var(--bg);
+      cursor: pointer;
+      z-index: 10;
+      transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    #cover.slide-up {
+      transform: translateY(-100%);
+    }
+
+    /* ── LOADER ── */
+    #loader-title {
+      font-size: clamp(2rem, 6vw, 3.8rem);
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      white-space: nowrap;
+      padding: 0.4em 0.6em;
+      display: inline-block;
+      text-shadow:
+        0 0 16px var(--amber),
+        0 0 50px rgba(232,160,32,0.5),
+        0 0 100px rgba(232,160,32,0.2);
+    }
+
+    #loader-status, #tap-hint {
+      font-size: 0.72rem;
+      color: var(--amber-dim);
+      letter-spacing: 0.06em;
+    }
+
+    #tap-hint {
+      animation: blink 1.2s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ── REVEAL ── */
+    #reveal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.6rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg);
+    }
+
+    /* ── REVEAL VISUALIZER ── */
+    #reveal-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 48px;
+    }
+
+    .reveal-bar {
+      width: 5px;
+      background: var(--amber);
+      border-radius: 1px;
+    }
+
+    #reveal h1 {
+      font-size: clamp(2rem, 8vw, 5rem);
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-shadow:
+        0 0 16px var(--amber),
+        0 0 50px rgba(232,160,32,0.5),
+        0 0 100px rgba(232,160,32,0.2);
+    }
+
+    #reveal p {
+      font-size: clamp(0.72rem, 1.8vw, 0.9rem);
+      color: var(--amber-dim);
+      letter-spacing: 0.06em;
+      line-height: 2;
+      text-shadow: 0 0 8px rgba(232,160,32,0.3);
+    }
+
+    /* ── FORM ── */
+    #mc-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 420px;
+      margin-top: 0.5rem;
+    }
+
+    #mc-form label {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: var(--amber-dim);
+      text-align: center;
+    }
+
+    .field-row {
+      display: flex;
+      width: 100%;
+      border: 1px solid var(--amber-dim);
+    }
+
+    .field-row:focus-within {
+      border-color: var(--amber);
+      box-shadow: 0 0 8px rgba(232,160,32,0.3);
+    }
+
+    #mc-email {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0.6rem 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--amber);
+      caret-color: var(--amber);
+    }
+
+    #mc-email::placeholder { color: var(--amber-dim); }
+
+    #mc-submit {
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--amber-dim);
+      padding: 0.6rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--amber);
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    #mc-submit:hover {
+      background: var(--amber);
+      color: var(--bg);
+    }
+
+    #mc-response {
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      min-height: 1.2em;
+      color: var(--amber-dim);
+    }
+
+    #mc-response.success { color: #4caf50; }
+    #mc-response.error   { color: #e05050; }
+  </style>
+</head>
+<body>
+
+  <!-- cover / splash -->
+  <div id="cover">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1.4rem;">
+      <span id="loader-title">EMPEETHREE</span>
+      <div id="loader-status">&gt; indexing library<span id="dots"></span></div>
+      <div id="tap-hint" style="display:none;">&gt; click anywhere to continue_</div>
+    </div>
+  </div>
+
+  <!-- reveal / landing -->
+  <div id="reveal" aria-hidden="true">
+    <div id="reveal-bars"></div>
+    <h1>EMPEETHREE</h1>
+    <p>
+      A desktop MP3 player.<br />
+      Plays your local files.<br />
+      No subscriptions, no cloud, no accounts.
+    </p>
+
+    <form id="mc-form"
+          action="https://justinmckinley.us6.list-manage.com/subscribe/post?u=dcca3dbde1eba0fa34e84fc62&amp;id=0048b7bd73&amp;f_id=00d91ae3f0"
+          method="post"
+          target="_blank"
+          novalidate>
+      <label for="mc-email">&gt; enter your email to be notified at launch</label>
+      <div class="field-row">
+        <input id="mc-email"
+               type="email"
+               name="EMAIL"
+               placeholder="you@example.com"
+               required />
+        <!-- honeypot — do not remove -->
+        <div style="position:absolute;left:-5000px" aria-hidden="true">
+          <input type="text" name="JJJJ" tabindex="-1" value="" />
+        </div>
+        <button id="mc-submit" type="submit">&gt; notify me</button>
+      </div>
+      <div id="mc-response" role="status"></div>
+    </form>
+  </div>
+
+  <script>
+    // ── STATUS MESSAGES ──
+    const messages = [
+      'indexing library',
+      'loading tracks',
+      'calibrating waveform',
+      'mounting filesystem',
+      'scanning metadata',
+      'decoding audio',
+    ];
+    let msgIdx = 0;
+    const statusEl = document.getElementById('loader-status');
+    const dotsEl   = document.getElementById('dots');
+    let dotCount = 0;
+    let ready = false;
+
+    setInterval(() => {
+      if (ready) return;
+      dotCount = (dotCount + 1) % 4;
+      dotsEl.textContent = '.'.repeat(dotCount);
+    }, 400);
+
+    setInterval(() => {
+      if (ready) return;
+      msgIdx = (msgIdx + 1) % messages.length;
+      statusEl.childNodes[0].textContent = '\u003e ' + messages[msgIdx];
+    }, 2200);
+
+    const tapHint = document.getElementById('tap-hint');
+
+    setTimeout(() => {
+      ready = true;
+      statusEl.style.display = 'none';
+      tapHint.style.display = 'block';
+    }, 5500);
+
+    // ── REVEAL VISUALIZER ──
+    const BAR_COUNT = 20;
+    const BAR_MIN = 4;
+    const BAR_MAX = 44;
+    const revealBarsEl = document.getElementById('reveal-bars');
+    const revealBars = [];
+
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const el = document.createElement('div');
+      el.className = 'reveal-bar';
+      el.style.height = BAR_MIN + 'px';
+      revealBarsEl.appendChild(el);
+      revealBars.push({ el, phase: Math.random() * Math.PI * 2, speed: 0.035 + Math.random() * 0.04 });
+    }
+
+    function animateRevealBars() {
+      revealBars.forEach((b, i) => {
+        b.phase += b.speed;
+        const norm = (Math.sin(b.phase) + Math.sin(b.phase * 1.6 + i * 0.4) * 0.4 + 1) / 2.8;
+        b.el.style.height = (BAR_MIN + norm * (BAR_MAX - BAR_MIN)).toFixed(1) + 'px';
+        b.el.style.opacity = (0.4 + norm * 0.5).toFixed(2);
+      });
+      requestAnimationFrame(animateRevealBars);
+    }
+    animateRevealBars();
+
+    // ── COVER / REVEAL ──
+    const cover  = document.getElementById('cover');
+    const reveal = document.getElementById('reveal');
+    const form   = document.getElementById('mc-form');
+    const resp   = document.getElementById('mc-response');
+
+    cover.addEventListener('click', () => {
+      ready = true;
+      cover.classList.add('slide-up');
+      reveal.removeAttribute('aria-hidden');
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const email = document.getElementById('mc-email').value.trim();
+      if (!email) return;
+
+      const action = form.action.replace('/post?', '/post-json?') + '&c=handleMC';
+      const script = document.createElement('script');
+      window.handleMC = data => {
+        script.remove();
+        if (data.result === 'success') {
+          resp.textContent = '> ' + data.msg.replace(/<[^>]*>/g, '');
+          resp.className = 'success';
+          form.reset();
+        } else {
+          resp.textContent = '> ' + data.msg.replace(/<[^>]*>/g, '').slice(0, 120);
+          resp.className = 'error';
+        }
+      };
+      script.src = action + '&EMAIL=' + encodeURIComponent(email);
+      document.body.appendChild(script);
+    });
+  </script>
+</body>
+</html>
