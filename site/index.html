@@ -58,7 +58,7 @@
       align-items: center;
       justify-content: center;
       gap: 2rem;
-      background: rgba(14, 14, 14, 0.78);
+      background: rgba(14, 14, 14, 0.82);
       cursor: pointer;
       z-index: 10;
       transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1);
@@ -68,18 +68,10 @@
       transform: translateY(-100%);
     }
 
-    /* ── LOADER ── */
-    #loader-title {
-      font-size: clamp(2rem, 6vw, 3.8rem);
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      white-space: nowrap;
-      padding: 0.4em 0.6em;
-      display: inline-block;
-      text-shadow:
-        0 0 16px var(--amber),
-        0 0 50px rgba(232,160,32,0.5),
-        0 0 100px rgba(232,160,32,0.2);
+    #logo-canvas {
+      display: block;
+      width: 100%;
+      max-width: 700px;
     }
 
     #loader-status, #tap-hint {
@@ -99,26 +91,36 @@
 
     /* ── REVEAL ── */
     #reveal {
+      display: none;
       position: fixed;
       inset: 0;
-      display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 1.6rem;
-      padding: 2rem;
-      text-align: center;
       z-index: 5;
     }
 
-    #reveal h1 {
-      font-size: clamp(2rem, 8vw, 5rem);
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      text-shadow:
-        0 0 16px var(--amber),
-        0 0 50px rgba(232,160,32,0.5),
-        0 0 100px rgba(232,160,32,0.2);
+    #reveal.visible {
+      display: flex;
+    }
+
+    /* dark legibility box */
+    .reveal-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.4rem;
+      padding: 2.4rem 2rem;
+      background: rgba(10, 10, 10, 0.92);
+      border: 1px solid var(--amber-dim);
+      max-width: 520px;
+      width: calc(100% - 2rem);
+      text-align: center;
+    }
+
+    #reveal-logo-canvas {
+      display: block;
+      width: 100%;
+      max-width: 460px;
     }
 
     #reveal p {
@@ -136,8 +138,6 @@
       align-items: center;
       gap: 0.75rem;
       width: 100%;
-      max-width: 420px;
-      margin-top: 0.5rem;
     }
 
     #mc-form label {
@@ -209,45 +209,203 @@
 
   <!-- cover / splash -->
   <div id="cover">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:1.4rem;">
-      <span id="loader-title">EMPEETHREE</span>
-      <div id="loader-status">&gt; indexing library<span id="dots"></span></div>
-      <div id="tap-hint" style="display:none;">&gt; click anywhere to continue_</div>
+    <canvas id="logo-canvas"></canvas>
+    <div id="loader-status">&gt; indexing library<span id="dots"></span></div>
+    <div id="tap-hint" style="display:none;">&gt; click anywhere to continue_</div>
+  </div>
+
+  <!-- reveal / email capture — hidden until click -->
+  <div id="reveal">
+    <div class="reveal-box">
+      <canvas id="reveal-logo-canvas"></canvas>
+      <p>
+        A desktop MP3 player.<br />
+        Plays your local files.<br />
+        No subscriptions, no cloud, no accounts.
+      </p>
+      <form id="mc-form"
+            action="https://justinmckinley.us6.list-manage.com/subscribe/post?u=dcca3dbde1eba0fa34e84fc62&amp;id=0048b7bd73&amp;f_id=00d91ae3f0"
+            method="post"
+            target="_blank"
+            novalidate>
+        <label for="mc-email">&gt; enter your email to be notified at launch</label>
+        <div class="field-row">
+          <input id="mc-email"
+                 type="email"
+                 name="EMAIL"
+                 placeholder="you@example.com"
+                 required />
+          <!-- honeypot — do not remove -->
+          <div style="position:absolute;left:-5000px" aria-hidden="true">
+            <input type="text" name="JJJJ" tabindex="-1" value="" />
+          </div>
+          <button id="mc-submit" type="submit">&gt; notify me</button>
+        </div>
+        <div id="mc-response" role="status"></div>
+      </form>
     </div>
   </div>
 
-  <!-- reveal / email capture -->
-  <div id="reveal" aria-hidden="true">
-    <h1>EMPEETHREE</h1>
-    <p>
-      A desktop MP3 player.<br />
-      Plays your local files.<br />
-      No subscriptions, no cloud, no accounts.
-    </p>
-
-    <form id="mc-form"
-          action="https://justinmckinley.us6.list-manage.com/subscribe/post?u=dcca3dbde1eba0fa34e84fc62&amp;id=0048b7bd73&amp;f_id=00d91ae3f0"
-          method="post"
-          target="_blank"
-          novalidate>
-      <label for="mc-email">&gt; enter your email to be notified at launch</label>
-      <div class="field-row">
-        <input id="mc-email"
-               type="email"
-               name="EMAIL"
-               placeholder="you@example.com"
-               required />
-        <!-- honeypot — do not remove -->
-        <div style="position:absolute;left:-5000px" aria-hidden="true">
-          <input type="text" name="JJJJ" tabindex="-1" value="" />
-        </div>
-        <button id="mc-submit" type="submit">&gt; notify me</button>
-      </div>
-      <div id="mc-response" role="status"></div>
-    </form>
-  </div>
-
   <script>
+    // ── AMBER THEME ────────────────────────────────────────────────────────────
+    const LOGO_COLOR    = [234, 172,  52];
+    const BAR_COLORS    = [[234,172,52],[234,172,52],[145,82,10],[90,50,5],[52,28,0],[52,28,0],[24,12,0]];
+    const C_BASE        = [232, 160,  32];
+    const C_HOT         = [255, 210,  80];
+    const C_GLITCH      = [255, 200,  60];
+
+    function tc([r, g, b], a) {
+      return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+    }
+
+    // ── LOGO CANVAS RENDERER (ported from app) ────────────────────────────────
+    function renderLogoCanvas(cv, heightRatio, charAlphas, charOverrides, barPulses) {
+      const DPR = window.devicePixelRatio || 1;
+      const W   = cv.offsetWidth || 600;
+      const H   = Math.round(W * heightRatio);
+      cv.width  = W * DPR;
+      cv.height = H * DPR;
+      cv.style.height = H + 'px';
+
+      const ctx = cv.getContext('2d');
+      ctx.scale(DPR, DPR);
+
+      const N_BARS   = 7;
+      const BAR_W    = Math.max(2, W * 0.014);
+      const BAR_GAP  = Math.max(1, W * 0.007);
+      const NAME_PAD = W * 0.038;
+      const WALL_PAD = W * 0.03;
+
+      let fontSize = 10;
+      ctx.font = `bold ${fontSize}px 'JetBrains Mono', monospace`;
+      const availNameW = W - 2 * (WALL_PAD + N_BARS * BAR_W + (N_BARS - 1) * BAR_GAP + NAME_PAD);
+      while (ctx.measureText('EMPEETHREE').width < availNameW && fontSize < 200) {
+        fontSize++;
+        ctx.font = `bold ${fontSize}px 'JetBrains Mono', monospace`;
+      }
+      fontSize = Math.max(1, fontSize - 1);
+      ctx.font = `bold ${fontSize}px 'JetBrains Mono', monospace`;
+
+      const nameW  = ctx.measureText('EMPEETHREE').width;
+      const nameX  = W / 2 - nameW / 2;
+      const cy     = H / 2;
+      const barH   = H * 0.38;
+      const barTop = cy - barH / 2;
+
+      // render to offscreen for glow
+      const off = document.createElement('canvas');
+      off.width = W * DPR; off.height = H * DPR;
+      const og = off.getContext('2d');
+      og.scale(DPR, DPR);
+      og.font = ctx.font;
+
+      function drawElements(g, alpha) {
+        for (let i = 0; i < N_BARS; i++) {
+          const bp = barPulses ? barPulses[i] : 1.0;
+          const [r, gv, b] = BAR_COLORS[i];
+          g.fillStyle = `rgba(${r},${gv},${b},${(alpha * bp).toFixed(3)})`;
+          g.fillRect(nameX - NAME_PAD - BAR_W - i * (BAR_W + BAR_GAP), barTop, BAR_W, barH);
+          g.fillRect(nameX + nameW + NAME_PAD + i * (BAR_W + BAR_GAP), barTop, BAR_W, barH);
+        }
+        if (charAlphas || charOverrides) {
+          const word = 'EMPEETHREE';
+          const charW = nameW / word.length;
+          for (let i = 0; i < word.length; i++) {
+            const a  = charAlphas ? (charAlphas[i] ?? 1.0) : 1.0;
+            const ch = (charOverrides && charOverrides[i]) ? charOverrides[i] : word[i];
+            g.fillStyle = tc(LOGO_COLOR, alpha * a);
+            g.fillText(ch, nameX + i * charW, cy + fontSize * 0.35);
+          }
+        } else {
+          g.fillStyle = tc(LOGO_COLOR, alpha);
+          g.fillText('EMPEETHREE', nameX, cy + fontSize * 0.35);
+        }
+      }
+
+      drawElements(og, 1.0);
+
+      ctx.fillStyle = '#0d0d0d';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.save(); ctx.filter = 'blur(18px)'; ctx.globalAlpha = 0.55; ctx.drawImage(off, 0, 0, W, H); ctx.restore();
+      ctx.save(); ctx.filter = 'blur(6px)';  ctx.globalAlpha = 0.70; ctx.drawImage(off, 0, 0, W, H); ctx.restore();
+      ctx.save(); ctx.filter = 'blur(2px)';  ctx.globalAlpha = 0.85; ctx.drawImage(off, 0, 0, W, H); ctx.restore();
+      ctx.save(); ctx.filter = 'none';       ctx.globalAlpha = 1.0;  drawElements(ctx, 1.0);          ctx.restore();
+
+      for (let y = 0; y < H; y += 4) {
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.fillRect(0, y, W, 1);
+      }
+    }
+
+    // ── ANIMATED COVER LOGO ───────────────────────────────────────────────────
+    const logoCv = document.getElementById('logo-canvas');
+
+    const FLICKER      = [2, 8];
+    const fstate       = FLICKER.map(() => ({ alpha: 1.0, timer: 0, on: true }));
+    const charAlphas   = Array(10).fill(1.0);
+    const charOverrides = Array(10).fill(null);
+    const swap3        = { active: false, timer: 0 };
+    const BAR_FREQS    = [1.3, 0.7, 2.1, 1.6, 0.9, 1.8, 0.5];
+    const BAR_PHASES   = [0.0, 2.4, 1.1, 4.8, 0.7, 3.2, 5.5];
+
+    function tickFlicker(fs) {
+      if (fs.timer > 0) {
+        fs.timer--;
+        fs.alpha = fs.on ? 1.0 : (Math.random() < 0.4 ? 0.06 + Math.random() * 0.2 : 0.05);
+      } else {
+        if (!fs.on) {
+          fs.on = true; fs.alpha = 1.0;
+          fs.timer = 80 + Math.floor(Math.random() * 220);
+        } else if (Math.random() < 0.004) {
+          fs.on = false; fs.alpha = 0.05;
+          fs.timer = 2 + Math.floor(Math.random() * 10);
+        }
+      }
+    }
+
+    function tickSwap3() {
+      if (swap3.timer > 0) {
+        swap3.timer--;
+      } else if (swap3.active) {
+        swap3.active = false;
+        charOverrides[3] = null;
+        swap3.timer = 120 + Math.floor(Math.random() * 300);
+      } else if (Math.random() < 0.005) {
+        swap3.active = true;
+        charOverrides[3] = '3';
+        swap3.timer = 20 + Math.floor(Math.random() * 25);
+      }
+    }
+
+    let logoRafId = null;
+    let logoRunning = true;
+
+    function logoFrame() {
+      if (!logoRunning) return;
+      fstate.forEach(tickFlicker);
+      tickSwap3();
+
+      if (swap3.active) {
+        for (let i = 0; i < 10; i++) charAlphas[i] = (i === 1 || i === 2 || i === 3) ? 1.0 : 0.06;
+      } else {
+        charAlphas.fill(1.0);
+        fstate.forEach((fs, i) => { charAlphas[FLICKER[i]] = fs.alpha; });
+      }
+
+      const t = performance.now() / 1000;
+      const barPulses = BAR_FREQS.map((f, i) =>
+        swap3.active ? 0.0 : 0.55 + 0.45 * Math.sin(t * f + BAR_PHASES[i])
+      );
+      renderLogoCanvas(logoCv, 0.22, charAlphas, charOverrides, barPulses);
+      logoRafId = requestAnimationFrame(logoFrame);
+    }
+
+    window.addEventListener('resize', () => {
+      if (!logoRunning) return;
+      renderLogoCanvas(logoCv, 0.22, charAlphas, charOverrides, null);
+    });
+
     // ── GLYPH CANVAS ──────────────────────────────────────────────────────────
     const VIZ_CHARS = [
       ' ', '·', '∙', '˙', '⠂', '⠄', '⠈', '⠐', '⠠',
@@ -265,16 +423,8 @@
       '⠿', '⡿', '⢿', '⣿', '⠛', '⠻', '⣹', '⢺', '⡼', '⠼',
     ];
 
-    const C_BASE   = [232, 160,  32];
-    const C_HOT    = [255, 210,  80];
-    const C_GLITCH = [255, 200,  60];
-
-    function tc([r, g, b], a) {
-      return `rgba(${r},${g},${b},${a.toFixed(3)})`;
-    }
-
-    const cv  = document.getElementById('glyph-canvas');
-    const ctx = cv.getContext('2d');
+    const glyphCv  = document.getElementById('glyph-canvas');
+    const glyphCtx = glyphCv.getContext('2d');
 
     const VIZ_BANDS = 28;
     const vizAmps   = new Float32Array(VIZ_BANDS).fill(0);
@@ -290,8 +440,8 @@
     const offCtx = offCv.getContext('2d');
 
     function resize() {
-      cv.width  = window.innerWidth;
-      cv.height = window.innerHeight;
+      glyphCv.width  = window.innerWidth;
+      glyphCv.height = window.innerHeight;
     }
     resize();
     window.addEventListener('resize', () => { resize(); vizGrid = null; });
@@ -303,7 +453,6 @@
       const W = window.innerWidth;
       const H = window.innerHeight;
 
-      // Simulate band amplitudes — slow organic sine waves, centre brighter
       const globalPulse = 0.48 + 0.28 * Math.sin(tick * 0.006);
       for (let b = 0; b < VIZ_BANDS; b++) {
         bandPhase[b] += bandSpeed[b];
@@ -311,12 +460,11 @@
         const wave = (Math.sin(bandPhase[b]) * 0.5 + 0.5)
                    * (Math.sin(bandPhase[b] * 1.7 + b * 0.3) * 0.3 + 0.7)
                    * edgeFade;
-        const target = wave * globalPulse * 0.6;
-        vizAmps[b] += (target - vizAmps[b]) * 0.05;
+        vizAmps[b] += (wave * globalPulse * 0.6 - vizAmps[b]) * 0.05;
       }
 
-      ctx.fillStyle = '#0e0e0e';
-      ctx.fillRect(0, 0, W, H);
+      glyphCtx.fillStyle = '#0e0e0e';
+      glyphCtx.fillRect(0, 0, W, H);
 
       const fSize = Math.max(9, Math.min(14, W / 52));
       const cW    = fSize * 0.62;
@@ -333,7 +481,6 @@
         };
       }
 
-      // Update cell characters and glitch state
       for (let c = 0; c < cols; c++) {
         const dist = Math.abs(c - (cols - 1) / 2) / ((cols - 1) / 2);
         const band = Math.floor(Math.pow(dist, 0.55) * (VIZ_BANDS - 1));
@@ -341,12 +488,7 @@
 
         for (let r = 0; r < rows; r++) {
           const idx = r * cols + c;
-
-          if (vizGrid.gtimer[idx] > 0) {
-            vizGrid.gtimer[idx]--;
-          } else {
-            vizGrid.gcidx[idx] = 255;
-          }
+          if (vizGrid.gtimer[idx] > 0) { vizGrid.gtimer[idx]--; } else { vizGrid.gcidx[idx] = 255; }
 
           const changeP = amp > 0.4 ? 0.12 : amp > 0.2 ? 0.05 : 0.012;
           if (Math.random() < changeP) {
@@ -363,11 +505,7 @@
         }
       }
 
-      // Draw to offscreen for phosphor glow pass
-      if (offCv.width !== W || offCv.height !== H) {
-        offCv.width  = W;
-        offCv.height = H;
-      }
+      if (offCv.width !== W || offCv.height !== H) { offCv.width = W; offCv.height = H; }
       offCtx.clearRect(0, 0, W, H);
       offCtx.font         = `${fSize}px 'JetBrains Mono', monospace`;
       offCtx.textBaseline = 'top';
@@ -382,12 +520,9 @@
         for (let r = 0; r < rows; r++) {
           const vDist = Math.abs(r - (rows - 1) / 2) / ((rows - 1) / 2);
           const vFade = Math.pow(1 - vDist, 0.6);
-
           const idx      = r * cols + c;
           const isGlitch = vizGrid.gcidx[idx] !== 255;
-          const ch       = isGlitch
-            ? VIZ_GLITCH[vizGrid.gcidx[idx]]
-            : VIZ_CHARS[vizGrid.cidx[idx]];
+          const ch       = isGlitch ? VIZ_GLITCH[vizGrid.gcidx[idx]] : VIZ_CHARS[vizGrid.cidx[idx]];
           if (!isGlitch && ch === ' ') continue;
 
           const y     = r * cH;
@@ -410,23 +545,16 @@
         }
       }
 
-      // Phosphor glow: wide → tight → sharp
-      ctx.save(); ctx.filter = 'blur(10px)'; ctx.globalAlpha = 0.5;  ctx.drawImage(offCv, 0, 0); ctx.restore();
-      ctx.save(); ctx.filter = 'blur(4px)';  ctx.globalAlpha = 0.75; ctx.drawImage(offCv, 0, 0); ctx.restore();
-      ctx.save(); ctx.filter = 'blur(1px)';  ctx.globalAlpha = 0.9;  ctx.drawImage(offCv, 0, 0); ctx.restore();
-      ctx.drawImage(offCv, 0, 0);
+      glyphCtx.save(); glyphCtx.filter = 'blur(10px)'; glyphCtx.globalAlpha = 0.5;  glyphCtx.drawImage(offCv, 0, 0); glyphCtx.restore();
+      glyphCtx.save(); glyphCtx.filter = 'blur(4px)';  glyphCtx.globalAlpha = 0.75; glyphCtx.drawImage(offCv, 0, 0); glyphCtx.restore();
+      glyphCtx.save(); glyphCtx.filter = 'blur(1px)';  glyphCtx.globalAlpha = 0.9;  glyphCtx.drawImage(offCv, 0, 0); glyphCtx.restore();
+      glyphCtx.drawImage(offCv, 0, 0);
     }
-
-    document.fonts.ready.then(drawGlyphs);
 
     // ── STATUS MESSAGES ──────────────────────────────────────────────────────
     const messages = [
-      'indexing library',
-      'loading tracks',
-      'calibrating waveform',
-      'mounting filesystem',
-      'scanning metadata',
-      'decoding audio',
+      'indexing library', 'loading tracks', 'calibrating waveform',
+      'mounting filesystem', 'scanning metadata', 'decoding audio',
     ];
     let msgIdx = 0;
     const statusEl = document.getElementById('loader-status');
@@ -447,23 +575,33 @@
     }, 2200);
 
     const tapHint = document.getElementById('tap-hint');
-
     setTimeout(() => {
       ready = true;
       statusEl.style.display = 'none';
       tapHint.style.display = 'block';
     }, 5500);
 
+    // ── START ─────────────────────────────────────────────────────────────────
+    document.fonts.ready.then(() => {
+      logoRafId = requestAnimationFrame(logoFrame);
+      drawGlyphs();
+    });
+
     // ── COVER / REVEAL ───────────────────────────────────────────────────────
-    const cover  = document.getElementById('cover');
-    const reveal = document.getElementById('reveal');
-    const form   = document.getElementById('mc-form');
-    const resp   = document.getElementById('mc-response');
+    const cover      = document.getElementById('cover');
+    const reveal     = document.getElementById('reveal');
+    const revealLogo = document.getElementById('reveal-logo-canvas');
+    const form       = document.getElementById('mc-form');
+    const resp       = document.getElementById('mc-response');
 
     cover.addEventListener('click', () => {
       ready = true;
       cover.classList.add('slide-up');
-      reveal.removeAttribute('aria-hidden');
+      // show reveal, then render its logo once layout is established
+      reveal.classList.add('visible');
+      requestAnimationFrame(() => renderLogoCanvas(revealLogo, 0.22, null, null, null));
+      // stop animating the cover logo once it's gone
+      cover.addEventListener('transitionend', () => { logoRunning = false; }, { once: true });
     });
 
     form.addEventListener('submit', e => {
