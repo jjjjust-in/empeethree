@@ -8,7 +8,24 @@ if (!app.isPackaged) {
 }
 
 let mainWindow;
-const AUDIO_EXTS = new Set(['.mp3', '.wav', '.ogg', '.flac', '.m4a']);
+const AUDIO_EXTS  = new Set(['.mp3', '.wav', '.ogg', '.flac', '.m4a']);
+const IMAGE_EXTS  = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
+const COVER_NAMES = ['cover', 'folder', 'artwork', 'front', 'album'];
+
+function findCoverArt(dirPath) {
+  try {
+    const files = fs.readdirSync(dirPath);
+    for (const name of COVER_NAMES) {
+      for (const ext of ['.jpg', '.jpeg', '.png', '.webp']) {
+        const match = files.find(f => f.toLowerCase() === name + ext);
+        if (match) return path.join(dirPath, match);
+      }
+    }
+    const img = files.find(f => IMAGE_EXTS.has(path.extname(f).toLowerCase()));
+    if (img) return path.join(dirPath, img);
+  } catch {}
+  return null;
+}
 
 // ── Config ─────────────────────────────────────────────────────────────────
 const configPath = path.join(app.getPath('userData'), 'config.json');
@@ -34,7 +51,7 @@ function savePlaylists(data) {
 function buildIndex(rootPath) {
   const tracks = [];
 
-  function walk(dirPath, artist, album) {
+  function walk(dirPath, artist, album, coverPath) {
     let entries;
     try { entries = fs.readdirSync(dirPath, { withFileTypes: true }); }
     catch { return; }
@@ -44,29 +61,27 @@ function buildIndex(rootPath) {
       const fullPath = path.join(dirPath, entry.name);
 
       if (entry.isDirectory()) {
-        // Depth heuristic: if no artist yet, this is the artist folder.
-        // If artist is set but no album, this is the album folder.
-        // Deeper nesting just inherits current artist+album.
         if (!artist) {
-          walk(fullPath, entry.name, null);
+          walk(fullPath, entry.name, null, null);
         } else if (!album) {
-          walk(fullPath, artist, entry.name);
+          walk(fullPath, artist, entry.name, findCoverArt(fullPath));
         } else {
-          walk(fullPath, artist, album);
+          walk(fullPath, artist, album, coverPath);
         }
       } else if (entry.isFile() && AUDIO_EXTS.has(path.extname(entry.name).toLowerCase())) {
         tracks.push({
-          name:     entry.name.replace(/\.[^.]+$/, ''),
-          filename: entry.name,
-          path:     fullPath,
-          artist:   artist || '',
-          album:    album  || '',
+          name:      entry.name.replace(/\.[^.]+$/, '').replace(/^\d+[\s.\-_]+/, ''),
+          filename:  entry.name,
+          path:      fullPath,
+          artist:    artist    || '',
+          album:     album     || '',
+          coverPath: coverPath || null,
         });
       }
     }
   }
 
-  walk(rootPath, null, null);
+  walk(rootPath, null, null, null);
   return tracks;
 }
 
@@ -181,7 +196,7 @@ ipcMain.handle('open-files', async () => {
   });
   if (result.canceled) return [];
   return result.filePaths.map(p => ({
-    name:     path.basename(p).replace(/\.[^.]+$/, ''),
+    name:     path.basename(p).replace(/\.[^.]+$/, '').replace(/^\d+[\s.\-_]+/, ''),
     filename: path.basename(p),
     path:     p,
     artist:   '',
@@ -190,6 +205,32 @@ ipcMain.handle('open-files', async () => {
 });
 
 ipcMain.handle('get-playlists', () => loadPlaylists());
+
+// ── Journal ────────────────────────────────────────────────────────────────
+const journalPath = path.join(app.getPath('userData'), 'journal.json');
+function loadJournal() {
+  try { return JSON.parse(fs.readFileSync(journalPath, 'utf8')); }
+  catch { return {}; }
+}
+function saveJournal(data) {
+  fs.writeFileSync(journalPath, JSON.stringify(data, null, 2));
+}
+
+ipcMain.handle('get-journal', () => loadJournal());
+
+ipcMain.handle('record-play', (_, track) => {
+  const journal = loadJournal();
+  const today = new Date().toISOString().split('T')[0];
+  if (!journal[today]) journal[today] = [];
+  journal[today].push({
+    name:     track.name,
+    artist:   track.artist || '',
+    album:    track.album  || '',
+    path:     track.path,
+    playedAt: Date.now(),
+  });
+  saveJournal(journal);
+});
 
 ipcMain.handle('save-playlist', async (_, { name, tracks }) => {
   const lists = loadPlaylists();

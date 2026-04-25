@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlaylists:   ()                    => ipcRenderer.invoke('get-playlists'),
   savePlaylist:   (name, tracks)        => ipcRenderer.invoke('save-playlist', { name, tracks }),
   deletePlaylist: (name)                => ipcRenderer.invoke('delete-playlist', name),
+  getJournal:     ()                    => ipcRenderer.invoke('get-journal'),
+  recordPlay:     (track)               => ipcRenderer.invoke('record-play', track),
   windowMinimize: ()                    => ipcRenderer.send('window-minimize'),
   windowMaximize: ()                    => ipcRenderer.send('window-maximize'),
   windowClose:    ()                    => ipcRenderer.send('window-close'),
