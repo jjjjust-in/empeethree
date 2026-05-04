@@ -49,58 +49,16 @@
       z-index: 0;
     }
 
-    /* ── COVER ── */
-    #cover {
+    /* ── REVEAL ── */
+    #reveal {
+      display: flex;
       position: fixed;
       inset: 0;
-      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2rem;
-      background: #0e0e0e;
-      cursor: pointer;
-      z-index: 10;
-      transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1);
-    }
-
-    #cover.slide-up {
-      transform: translateY(-100%);
-    }
-
-    #logo-canvas {
-      display: block;
-      width: 100%;
-      max-width: 700px;
-    }
-
-    #loader-status, #tap-hint {
-      font-size: 0.72rem;
-      color: var(--amber-dim);
-      letter-spacing: 0.06em;
-    }
-
-    #tap-hint {
-      animation: blink 1.2s step-end infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    /* ── REVEAL ── */
-    #reveal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      align-items: center;
-      justify-content: center;
+      gap: 0;
       z-index: 5;
-    }
-
-    #reveal.visible {
-      display: flex;
     }
 
     /* dark legibility box */
@@ -130,77 +88,68 @@
       line-height: 2;
       text-shadow: 0 0 8px rgba(232,160,32,0.3);
       margin: 1.6rem 0;
+      position: relative;
+      top: -16px;
     }
 
-    /* ── FORM ── */
-    #mc-form {
+    /* ── DOWNLOAD BUTTONS ── */
+    .download-group {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
       width: 100%;
     }
 
-    #mc-form label {
+    .download-group label {
       font-size: 0.7rem;
       letter-spacing: 0.1em;
       color: var(--amber-dim);
       text-align: center;
     }
 
-    .field-row {
+    .dl-btn {
       display: flex;
+      align-items: center;
+      justify-content: space-between;
       width: 100%;
+      background: transparent;
       border: 1px solid var(--amber-dim);
-    }
-
-    .field-row:focus-within {
-      border-color: var(--amber);
-      box-shadow: 0 0 8px rgba(232,160,32,0.3);
-    }
-
-    #mc-email {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      padding: 0.6rem 0.8rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      color: var(--amber);
-      caret-color: var(--amber);
-    }
-
-    #mc-email::placeholder { color: var(--amber-dim); }
-
-    #mc-submit {
-      background: transparent;
-      border: none;
-      border-left: 1px solid var(--amber-dim);
       padding: 0.6rem 1rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.8rem;
       color: var(--amber);
       cursor: pointer;
       letter-spacing: 0.05em;
-      white-space: nowrap;
-      transition: background 0.2s, color 0.2s;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
     }
 
-    #mc-submit:hover {
+    .dl-btn:hover {
       background: var(--amber);
+      border-color: var(--amber);
       color: var(--bg);
     }
 
-    #mc-response {
-      font-size: 0.75rem;
-      letter-spacing: 0.05em;
-      min-height: 1.2em;
-      color: var(--amber-dim);
+    .dl-btn .dl-arch {
+      opacity: 0.6;
+      font-size: 0.7rem;
     }
 
-    #mc-response.success { color: #4caf50; }
-    #mc-response.error   { color: #e05050; }
+    #bmc-link {
+      display: block;
+      margin-top: 0.9rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: var(--amber-dim);
+      text-decoration: none;
+      text-align: center;
+      transition: color 0.2s;
+    }
+
+    #bmc-link:hover {
+      color: var(--amber);
+    }
   </style>
 </head>
 <body>
@@ -208,14 +157,7 @@
   <!-- full-screen glyph canvas -->
   <canvas id="glyph-canvas"></canvas>
 
-  <!-- cover / splash -->
-  <div id="cover">
-    <canvas id="logo-canvas"></canvas>
-    <div id="loader-status">&gt; indexing library<span id="dots"></span></div>
-    <div id="tap-hint" style="display:none;">&gt; click anywhere to continue_</div>
-  </div>
-
-  <!-- reveal / email capture — hidden until click -->
+  <!-- reveal -->
   <div id="reveal">
     <div class="reveal-box">
       <canvas id="reveal-logo-canvas"></canvas>
@@ -224,27 +166,21 @@
         Plays your local files.<br />
         No subscriptions, no cloud, no accounts.
       </p>
-      <form id="mc-form"
-            action="https://justinmckinley.us6.list-manage.com/subscribe/post?u=dcca3dbde1eba0fa34e84fc62&amp;id=0048b7bd73&amp;f_id=00d91ae3f0"
-            method="post"
-            target="_blank"
-            novalidate>
-        <label for="mc-email">&gt; enter your email to be notified at launch</label>
-        <div class="field-row">
-          <input id="mc-email"
-                 type="email"
-                 name="EMAIL"
-                 placeholder="you@example.com"
-                 required />
-          <!-- honeypot — do not remove -->
-          <div style="position:absolute;left:-5000px" aria-hidden="true">
-            <input type="text" name="JJJJ" tabindex="-1" value="" />
-          </div>
-          <button id="mc-submit" type="submit">&gt; notify me</button>
-        </div>
-        <div id="mc-response" role="status"></div>
-      </form>
+      <div class="download-group">
+        <label>&gt; download for macOS — free &nbsp;<span id="dl-total"></span></label>
+        <a class="dl-btn" href="Empeethree-1.0.0-arm64.dmg" download data-file="arm64">
+          <span>&gt; Apple Silicon</span>
+          <span class="dl-arch">M1 / M2 / M3 / M4</span>
+        </a>
+        <a class="dl-btn" href="Empeethree-1.0.0.dmg" download data-file="x64">
+          <span>&gt; Intel Mac</span>
+          <span class="dl-arch">x86_64</span>
+        </a>
+      </div>
     </div>
+    <a id="bmc-link" href="https://buymeacoffee.com/jjjjustin" target="_blank" rel="noopener">
+      &gt; buy me a coffee_
+    </a>
   </div>
 
   <script>
@@ -337,74 +273,6 @@
         ctx.fillRect(0, y, W, 1);
       }
     }
-
-    // ── ANIMATED COVER LOGO ───────────────────────────────────────────────────
-    const logoCv = document.getElementById('logo-canvas');
-
-    const FLICKER      = [2, 8];
-    const fstate       = FLICKER.map(() => ({ alpha: 1.0, timer: 0, on: true }));
-    const charAlphas   = Array(10).fill(1.0);
-    const charOverrides = Array(10).fill(null);
-    const swap3        = { active: false, timer: 0 };
-    const BAR_FREQS    = [1.3, 0.7, 2.1, 1.6, 0.9, 1.8, 0.5];
-    const BAR_PHASES   = [0.0, 2.4, 1.1, 4.8, 0.7, 3.2, 5.5];
-
-    function tickFlicker(fs) {
-      if (fs.timer > 0) {
-        fs.timer--;
-        fs.alpha = fs.on ? 1.0 : (Math.random() < 0.4 ? 0.06 + Math.random() * 0.2 : 0.05);
-      } else {
-        if (!fs.on) {
-          fs.on = true; fs.alpha = 1.0;
-          fs.timer = 80 + Math.floor(Math.random() * 220);
-        } else if (Math.random() < 0.004) {
-          fs.on = false; fs.alpha = 0.05;
-          fs.timer = 2 + Math.floor(Math.random() * 10);
-        }
-      }
-    }
-
-    function tickSwap3() {
-      if (swap3.timer > 0) {
-        swap3.timer--;
-      } else if (swap3.active) {
-        swap3.active = false;
-        charOverrides[3] = null;
-        swap3.timer = 120 + Math.floor(Math.random() * 300);
-      } else if (Math.random() < 0.005) {
-        swap3.active = true;
-        charOverrides[3] = '3';
-        swap3.timer = 20 + Math.floor(Math.random() * 25);
-      }
-    }
-
-    let logoRafId = null;
-    let logoRunning = true;
-
-    function logoFrame() {
-      if (!logoRunning) return;
-      fstate.forEach(tickFlicker);
-      tickSwap3();
-
-      if (swap3.active) {
-        for (let i = 0; i < 10; i++) charAlphas[i] = (i === 1 || i === 2 || i === 3) ? 1.0 : 0.06;
-      } else {
-        charAlphas.fill(1.0);
-        fstate.forEach((fs, i) => { charAlphas[FLICKER[i]] = fs.alpha; });
-      }
-
-      const t = performance.now() / 1000;
-      const barPulses = BAR_FREQS.map((f, i) =>
-        swap3.active ? 0.0 : 0.55 + 0.45 * Math.sin(t * f + BAR_PHASES[i])
-      );
-      renderLogoCanvas(logoCv, 0.22, charAlphas, charOverrides, barPulses);
-      logoRafId = requestAnimationFrame(logoFrame);
-    }
-
-    window.addEventListener('resize', () => {
-      if (!logoRunning) return;
-      renderLogoCanvas(logoCv, 0.22, charAlphas, charOverrides, null);
-    });
 
     // ── GLYPH CANVAS ──────────────────────────────────────────────────────────
     const VIZ_CHARS = [
@@ -551,80 +419,34 @@
       glyphCtx.drawImage(offCv, 0, 0);
     }
 
-    // ── STATUS MESSAGES ──────────────────────────────────────────────────────
-    const messages = [
-      'indexing library', 'loading tracks', 'calibrating waveform',
-      'mounting filesystem', 'scanning metadata', 'decoding audio',
-    ];
-    let msgIdx = 0;
-    const statusEl = document.getElementById('loader-status');
-    const dotsEl   = document.getElementById('dots');
-    let dotCount = 0;
-    let ready = false;
-
-    setInterval(() => {
-      if (ready) return;
-      dotCount = (dotCount + 1) % 4;
-      dotsEl.textContent = '.'.repeat(dotCount);
-    }, 400);
-
-    setInterval(() => {
-      if (ready) return;
-      msgIdx = (msgIdx + 1) % messages.length;
-      statusEl.childNodes[0].textContent = '\u003e ' + messages[msgIdx];
-    }, 2200);
-
-    const tapHint = document.getElementById('tap-hint');
-    setTimeout(() => {
-      ready = true;
-      statusEl.style.display = 'none';
-      tapHint.style.display = 'block';
-    }, 5500);
-
     // ── START ─────────────────────────────────────────────────────────────────
-    document.fonts.ready.then(() => {
-      logoRafId = requestAnimationFrame(logoFrame);
-      drawGlyphs();
-    });
-
-    // ── COVER / REVEAL ───────────────────────────────────────────────────────
-    const cover      = document.getElementById('cover');
-    const reveal     = document.getElementById('reveal');
     const revealLogo = document.getElementById('reveal-logo-canvas');
-    const form       = document.getElementById('mc-form');
-    const resp       = document.getElementById('mc-response');
 
-    cover.addEventListener('click', () => {
-      ready = true;
-      cover.classList.add('slide-up');
-      // show reveal, then render its logo once layout is established
-      reveal.classList.add('visible');
+    document.fonts.ready.then(() => {
+      drawGlyphs();
       requestAnimationFrame(() => renderLogoCanvas(revealLogo, 0.22, null, null, null));
-      // stop animating the cover logo once it's gone
-      cover.addEventListener('transitionend', () => { logoRunning = false; }, { once: true });
+      loadCount();
     });
 
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const email = document.getElementById('mc-email').value.trim();
-      if (!email) return;
+    // ── DOWNLOAD COUNTER ─────────────────────────────────────────────────────
+    async function loadCount() {
+      try {
+        const res = await fetch('/api/download-count?file=arm64');
+        const data = await res.json();
+        const total = (data.arm64 ?? 0) + (data.x64 ?? 0);
+        document.getElementById('dl-total').textContent =
+          '— ' + total.toLocaleString() + ' download' + (total === 1 ? '' : 's');
+      } catch (_) {}
+    }
 
-      const action = form.action.replace('/post?', '/post-json?') + '&c=handleMC';
-      const script = document.createElement('script');
-      window.handleMC = data => {
-        script.remove();
-        if (data.result === 'success') {
-          resp.textContent = '> ' + data.msg.replace(/<[^>]*>/g, '');
-          resp.className = 'success';
-          form.reset();
-        } else {
-          resp.textContent = '> ' + data.msg.replace(/<[^>]*>/g, '').slice(0, 120);
-          resp.className = 'error';
-        }
-      };
-      script.src = action + '&EMAIL=' + encodeURIComponent(email);
-      document.body.appendChild(script);
+    document.querySelectorAll('.dl-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        fetch('/api/download-count?file=' + btn.dataset.file, { method: 'POST' })
+          .then(() => loadCount())
+          .catch(() => {});
+      });
     });
+
   </script>
 </body>
 </html>
