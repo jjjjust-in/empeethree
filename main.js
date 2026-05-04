@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
 const path = require('path');
 const fs   = require('fs');
 const os   = require('os');
@@ -69,6 +69,8 @@ function buildIndex(rootPath) {
           walk(fullPath, artist, album, coverPath);
         }
       } else if (entry.isFile() && AUDIO_EXTS.has(path.extname(entry.name).toLowerCase())) {
+        let mtime = 0;
+        try { mtime = fs.statSync(fullPath).mtimeMs; } catch {}
         tracks.push({
           name:      entry.name.replace(/\.[^.]+$/, '').replace(/^\d+[\s.\-_]+/, ''),
           filename:  entry.name,
@@ -76,6 +78,7 @@ function buildIndex(rootPath) {
           artist:    artist    || '',
           album:     album     || '',
           coverPath: coverPath || null,
+          mtime,
         });
       }
     }
@@ -136,6 +139,15 @@ function createWindow() {
     },
   });
   mainWindow.loadFile('index.html');
+
+  if (process.platform === 'darwin') {
+    const dockMenu = Menu.buildFromTemplate([
+      { label: '▶  Play / Pause', click: () => mainWindow.webContents.send('media-control', 'toggle') },
+      { label: '⏭  Next',         click: () => mainWindow.webContents.send('media-control', 'next') },
+      { label: '⏮  Previous',     click: () => mainWindow.webContents.send('media-control', 'prev') },
+    ]);
+    app.dock.setMenu(dockMenu);
+  }
 
   // Open external links in the system browser instead of navigating the app
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

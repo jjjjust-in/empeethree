@@ -17,4 +17,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowClose:    ()                    => ipcRenderer.send('window-close'),
   isGifMode:      ()                    => ipcRenderer.invoke('is-gif-mode'),
   startGifCapture:()                    => ipcRenderer.invoke('start-gif-capture'),
+  onMediaControl: (cb)                  => ipcRenderer.on('media-control', (_, cmd) => cb(cmd)),
 });

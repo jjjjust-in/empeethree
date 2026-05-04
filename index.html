@@ -31,11 +31,13 @@
 
         <div class="settings-section">
           <div class="settings-section-label">MUSIC FOLDER</div>
-          <button class="settings-action-btn" id="settings-set-folder">set folder…</button>
+          <input type="text" id="settings-folder-path" class="settings-folder-path" readonly spellcheck="false">
+          <button class="settings-action-btn" id="settings-set-folder">Choose Folder</button>
         </div>
 
         <div class="settings-section">
           <div class="settings-section-label">EQUALIZER</div>
+          <div class="settings-select-wrap">
           <select id="eq-preset-select" class="settings-select">
             <option value="FLAT">FLAT</option>
             <option value="BASS BOOST">BASS BOOST</option>
@@ -48,6 +50,7 @@
             <option value="HIP HOP">HIP HOP</option>
             <option value="CLASSICAL">CLASSICAL</option>
           </select>
+          </div>
         </div>
 
         <div class="settings-section">
@@ -67,6 +70,38 @@
             <label class="settings-radio"><input type="radio" name="color-theme" value="blue"> BLUE</label>
             <label class="settings-radio"><input type="radio" name="color-theme" value="red"> RED</label>
           </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-label">KEYBOARD SHORTCUTS</div>
+          <div class="settings-shortcuts">
+            <div class="settings-shortcut-row"><span>Space</span><span>play / pause</span></div>
+            <div class="settings-shortcut-row"><span>N</span><span>next track</span></div>
+            <div class="settings-shortcut-row"><span>P</span><span>previous track</span></div>
+            <div class="settings-shortcut-row"><span>← →</span><span>seek ±5 seconds</span></div>
+            <div class="settings-shortcut-row"><span>↑ ↓</span><span>volume ±5%</span></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-label">FILE STRUCTURE</div>
+          <ul class="settings-instructions">
+            <li>Music Root / Artist / Album / track.mp3</li>
+            <li>Artist = first subfolder name</li>
+            <li>Album = second subfolder name</li>
+            <li>Track numbers are stripped from display</li>
+          </ul>
+          <div class="settings-section-label" style="margin-top:12px;">COVER ART</div>
+          <ul class="settings-instructions">
+            <li>Place image inside the album folder</li>
+            <li>Filename must include: cover, folder,</li>
+            <li>artwork, front, or album</li>
+            <li>Formats: .jpg .jpeg .png .webp</li>
+          </ul>
+          <div class="settings-section-label" style="margin-top:12px;">SUPPORTED AUDIO</div>
+          <ul class="settings-instructions">
+            <li>.mp3 .wav .ogg .flac .m4a</li>
+          </ul>
         </div>
 
         <div class="settings-section settings-section-about">
@@ -193,6 +228,7 @@
         <div id="now-playing-info">
           <div id="track-name">no track selected</div>
           <div id="track-artist"></div>
+          <div id="track-album"></div>
         </div>
 
         <div id="seek-row">

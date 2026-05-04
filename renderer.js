@@ -1,7 +1,7 @@
 // renderer.js — Empeethree
 
 // ── Shared Logo Canvas Renderer ────────────────────────────────────────────
-function renderLogoCanvas(cv, heightRatio = 0.22, contentScale = 1.0, charAlphas = null, charOverrides = null, barPulses = null) {
+function renderLogoCanvas(cv, heightRatio = 0.22, contentScale = 1.0, charAlphas = null, charOverrides = null, barPulses = null, barColorOverride = null) {
   const DPR = window.devicePixelRatio || 1;
   const W   = cv.offsetWidth || 300;
   const H   = Math.round(W * heightRatio);
@@ -25,7 +25,7 @@ function renderLogoCanvas(cv, heightRatio = 0.22, contentScale = 1.0, charAlphas
   const WALL_PAD  = LW * 0.03;
   const bars_span = N_BARS * BAR_W + (N_BARS - 1) * BAR_GAP;
 
-  const BAR_COLORS = VIZ_C.barColors;
+  const BAR_COLORS = barColorOverride || VIZ_C.barColors;
 
   const availNameW = LW - 2 * (WALL_PAD + bars_span + NAME_PAD);
   let fontSize = 10;
@@ -195,13 +195,81 @@ let charOverrides = Array(10).fill(null);
   window.addEventListener('resize', () => renderLogoCanvas(cv, 0.22, 1.0, charAlphas, charOverrides, 1.0));
 })();
 
-// ── Panel logo canvas ──────────────────────────────────────────────────────
+// ── Panel logo canvas + secondary visualizer ──────────────────────────────
 (function() {
   const cv = document.getElementById('panel-logo-canvas');
-  function render() { renderLogoCanvas(cv, 0.22, 0.82); }
-  document.fonts.ready.then(render);
-  setTimeout(render, 200);
-  window.addEventListener('resize', render);
+  const N_LOGO_BARS = 7;
+  const logoPulses  = new Float32Array(N_LOGO_BARS).fill(1.0);
+  const SMOOTH_RISE = 0.80;
+  const SMOOTH_FALL = 0.18;
+  const DIM         = 0.05;  // opacity of unlit bars
+
+  let level    = 0;
+  let rmsMax   = 0.01;
+  let rmsFloor = 1.0;
+  let vizT     = 0.0;  // 0 = full static look, 1 = full viz look
+  let fontsReady = false;
+  document.fonts.ready.then(() => { fontsReady = true; });
+  setTimeout(() => { fontsReady = true; }, 400);
+  window.addEventListener('resize', () => renderLogoCanvas(cv, 0.22, 0.82, null, null, logoPulses));
+
+  function lerpColor(a, b, t) {
+    return [
+      Math.round(a[0] + (b[0] - a[0]) * t),
+      Math.round(a[1] + (b[1] - a[1]) * t),
+      Math.round(a[2] + (b[2] - a[2]) * t),
+    ];
+  }
+
+  function logoVizLoop() {
+    requestAnimationFrame(logoVizLoop);
+    if (!fontsReady) return;
+
+    if (typeof analyser !== 'undefined' && typeof freqData !== 'undefined' && state.isPlaying) {
+      analyser.getByteFrequencyData(freqData);
+
+      // RMS across musically-relevant bins
+      let sum = 0;
+      const lo = 2, hi = 200;
+      for (let b = lo; b < hi; b++) sum += freqData[b] * freqData[b];
+      const rms = Math.sqrt(sum / (hi - lo)) / 255;
+
+      // Adaptive normalization: scale relative to recent loudest/quietest moments
+      rmsMax   = Math.max(rmsMax,   rms) * 0.9998;  // ceiling decays slowly
+      rmsFloor = Math.min(rmsFloor, rms) * 1.0002;  // floor rises slowly
+      const range      = Math.max(0.01, rmsMax - rmsFloor);
+      const normalized = Math.max(0, Math.min(1, (rms - rmsFloor) / range));
+      const target     = Math.pow(normalized, 1.3);
+      const ease   = target > level ? SMOOTH_RISE : SMOOTH_FALL;
+      level += (target - level) * ease;
+
+      // Map level → how many bars are fully lit (always at least 1 while playing)
+      const lit = Math.max(1, Math.round(level * N_LOGO_BARS));
+
+      for (let i = 0; i < N_LOGO_BARS; i++) {
+        logoPulses[i] = i < lit ? 1.0 : DIM;
+      }
+    } else {
+      // Idle: reset adaptive state, bars drift back to full
+      level = 0; rmsMax = 0.01; rmsFloor = 1.0;
+      for (let i = 0; i < N_LOGO_BARS; i++) {
+        logoPulses[i] += (1.0 - logoPulses[i]) * 0.06;
+      }
+    }
+
+    // Smoothly blend vizT toward 1 when playing, 0 when idle
+    const targetT = state.isPlaying ? 1.0 : 0.0;
+    vizT += (targetT - vizT) * 0.035;
+
+    // Interpolate bar colors between static faded and uniform viz
+    const blendedColors = VIZ_C.barColors.map((c, i) =>
+      lerpColor(c, VIZ_C.vizColors[i], vizT)
+    );
+
+    renderLogoCanvas(cv, 0.22, 0.82, null, null, logoPulses, blendedColors);
+  }
+
+  logoVizLoop();
 })();
 
 // ── Splash Screen ──────────────────────────────────────────────────────────
@@ -224,32 +292,36 @@ document.getElementById('splash').addEventListener('click', () => {
 // ── Theme ──────────────────────────────────────────────────────────────────
 const THEMES = {
   amber: {
-    logo:   [234, 172,  52],
-    base:   [234, 172,  52],
-    hot:    [255, 200,  80],
-    glitch: [255, 215, 100],
+    logo:      [234, 172,  52],
+    base:      [234, 172,  52],
+    hot:       [255, 200,  80],
+    glitch:    [255, 215, 100],
     barColors: [[234,172,52],[234,172,52],[145,82,10],[90,50,5],[52,28,0],[52,28,0],[24,12,0]],
+    vizColors: [[234,172,52],[234,172,52],[234,172,52],[234,172,52],[234,172,52],[234,172,52],[234,172,52]],
   },
   green: {
-    logo:   [  0, 230,  80],
-    base:   [  0, 220,  70],
-    hot:    [160, 255, 140],
-    glitch: [200, 255, 180],
+    logo:      [  0, 230,  80],
+    base:      [  0, 220,  70],
+    hot:       [160, 255, 140],
+    glitch:    [200, 255, 180],
     barColors: [[0,230,80],[0,230,80],[0,130,40],[0,85,25],[0,42,12],[0,42,12],[0,20,6]],
+    vizColors: [[0,230,80],[0,230,80],[0,230,80],[0,230,80],[0,230,80],[0,230,80],[0,230,80]],
   },
   blue: {
-    logo:   [ 60, 160, 255],
-    base:   [ 80, 180, 255],
-    hot:    [180, 230, 255],
-    glitch: [140, 200, 255],
+    logo:      [ 60, 160, 255],
+    base:      [ 80, 180, 255],
+    hot:       [180, 230, 255],
+    glitch:    [140, 200, 255],
     barColors: [[60,160,255],[60,160,255],[30,80,160],[15,45,100],[5,20,50],[5,20,50],[2,8,22]],
+    vizColors: [[60,160,255],[60,160,255],[60,160,255],[60,160,255],[60,160,255],[60,160,255],[60,160,255]],
   },
   red: {
-    logo:   [230,  50,  30],
-    base:   [255,  60,  30],
-    hot:    [255, 160,  80],
-    glitch: [255, 120,  60],
+    logo:      [230,  50,  30],
+    base:      [255,  60,  30],
+    hot:       [255, 160,  80],
+    glitch:    [255, 120,  60],
     barColors: [[230,50,30],[230,50,30],[130,22,10],[80,12,5],[40,5,2],[40,5,2],[18,2,1]],
+    vizColors: [[230,50,30],[230,50,30],[230,50,30],[230,50,30],[230,50,30],[230,50,30],[230,50,30]],
   },
 };
 let VIZ_C = THEMES.amber;
@@ -282,6 +354,7 @@ const state = {
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const analyser = audioCtx.createAnalyser();
 analyser.fftSize = 2048;
+analyser.smoothingTimeConstant = 0.3;
 const gainNode = audioCtx.createGain();
 gainNode.gain.value = state.volume;
 
@@ -339,6 +412,7 @@ const elPlEmpty     = document.getElementById('playlist-empty');
 const elNoRoot      = document.getElementById('no-root');
 const elTrackName   = document.getElementById('track-name');
 const elTrackArtist = document.getElementById('track-artist');
+const elTrackAlbum  = document.getElementById('track-album');
 const elTimeCur     = document.getElementById('time-current');
 const elTimeTot     = document.getElementById('time-total');
 const elSeekFill    = document.getElementById('seek-bar-fill');
@@ -482,9 +556,9 @@ function openSettings() {
   elDefaultVizRadios.forEach(r => { r.checked = Number(r.value) === vizMode; });
   elThemeRadios.forEach(r => { r.checked = r.value === currentTheme; });
   elEQSelect.value = currentEQPreset;
-  elSettingsFolder.textContent = state.rootFolder
-    ? (state.rootFolder.split('/').pop() || state.rootFolder)
-    : 'set folder…';
+  const elFolderPath = document.getElementById('settings-folder-path');
+  elFolderPath.value       = state.rootFolder || '';
+  elFolderPath.placeholder = 'no folder selected';
   elSettingsPanel.classList.remove('hidden');
 }
 
@@ -573,6 +647,7 @@ function renderPlaylist() {
         elTrackName.textContent = '─── no track selected ───';
         elTrackName.classList.remove('playing');
         elTrackArtist.textContent = '';
+        elTrackAlbum.textContent  = '';
       } else if (state.currentIndex > i) {
         state.currentIndex--;
       }
@@ -652,8 +727,37 @@ function scrollToActive() {
 }
 
 // ── Playback ───────────────────────────────────────────────────────────────
+let scrobbleTimer = null;
+
+function cancelScrobble() {
+  if (scrobbleTimer) { clearTimeout(scrobbleTimer); scrobbleTimer = null; }
+}
+
+function scheduleScrobble(t) {
+  cancelScrobble();
+  // Wait for duration to be known, then set timer for 50% of track length
+  const trySchedule = () => {
+    if (isFinite(audio.duration) && audio.duration > 0) {
+      const delay = (audio.duration * 0.5 - audio.currentTime) * 1000;
+      if (delay > 0) {
+        scrobbleTimer = setTimeout(() => {
+          if (state.isPlaying && state.tracks[state.currentIndex]?.path === t.path) {
+            window.electronAPI.recordPlay(t);
+          }
+        }, delay);
+      } else {
+        // Already past 50% (e.g. resumed mid-track) — don't scrobble
+      }
+    } else {
+      audio.addEventListener('durationchange', trySchedule, { once: true });
+    }
+  };
+  trySchedule();
+}
+
 function playIndex(index) {
   if (index < 0 || index >= state.tracks.length) return;
+  cancelScrobble();
   state.currentIndex = index;
   const t = state.tracks[index];
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -666,7 +770,8 @@ function playIndex(index) {
     elTrackName.textContent = stripTrackNum(t.name);
     elTrackName.classList.add('playing');
     elTrackArtist.textContent = t.artist || '';
-    window.electronAPI.recordPlay(t);
+    elTrackAlbum.textContent  = t.album  || '';
+    scheduleScrobble(t);
     elBtnPlay.textContent = '⏸';
     setStatus(`playing: ${t.name}`);
     renderPlaylist();
@@ -680,11 +785,13 @@ function togglePlay() {
   if (state.currentIndex === -1) { playIndex(0); return; }
   if (state.isPlaying) {
     audio.pause(); state.isPlaying = false;
+    cancelScrobble();
     elBtnPlay.textContent = '▶';
     elTrackName.classList.remove('playing');
     setStatus('paused');
   } else {
     audio.play(); state.isPlaying = true;
+    scheduleScrobble(state.tracks[state.currentIndex]);
     elBtnPlay.textContent = '⏸';
     elTrackName.classList.add('playing');
     setStatus(`playing: ${state.tracks[state.currentIndex].name}`);
@@ -758,6 +865,7 @@ elBtnClearQ.addEventListener('click', () => {
   elTrackName.textContent = '─── no track selected ───';
   elTrackName.classList.remove('playing');
   elTrackArtist.textContent = '';
+  elTrackAlbum.textContent  = '';
   elTimeCur.textContent = '0:00'; elTimeTot.textContent = '0:00';
   elSeekFill.style.width = '0%'; elSeekThumb.style.left = '0%';
   elBtnPlay.textContent = '▶';
@@ -799,6 +907,13 @@ function setVolume(pct) {
 elVolWrap.addEventListener('mousedown', e => { isVolDrag = true; setVolume(volPct(e)); });
 document.addEventListener('mousemove', e => { if (isVolDrag) setVolume(volPct(e)); });
 document.addEventListener('mouseup', () => { isVolDrag = false; });
+
+// ── Dock / media controls ──────────────────────────────────────────────────
+window.electronAPI.onMediaControl(cmd => {
+  if (cmd === 'toggle') togglePlay();
+  else if (cmd === 'next') nextTrack();
+  else if (cmd === 'prev')  prevTrack();
+});
 
 // ── Keyboard ───────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
@@ -1508,8 +1623,172 @@ document.getElementById('lib-table-head').addEventListener('click', e => {
   if (th) setLibSort(th.dataset.col);
 });
 
-// ── Browse (flat track list — sidebar) ────────────────────────────────────
-function renderBrowse(container = elSidebarBrowseTree) {
+// ── Browse ─────────────────────────────────────────────────────────────────
+const BROWSE_SECTION_LIMIT = 20;
+
+function makeAlbumCard({ album, artist, tracks, coverPath }) {
+  const card = document.createElement('div');
+  card.className = 'browse-card';
+
+  const artWrap = document.createElement('div');
+  artWrap.className = 'browse-art-wrap';
+
+  if (coverPath) {
+    const img = document.createElement('img');
+    img.className = 'browse-art-img';
+    img.src = `file://${coverPath}`;
+    img.alt = album;
+    artWrap.appendChild(img);
+  } else {
+    const ph = document.createElement('div');
+    ph.className = 'browse-art-placeholder';
+    ph.textContent = (album || '?')[0].toUpperCase();
+    artWrap.appendChild(ph);
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'browse-art-overlay';
+  const addBtn = document.createElement('button');
+  addBtn.className = 'browse-art-add-btn';
+  addBtn.textContent = '+ queue';
+  addBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    addToQueue(tracks);
+    setStatus(`queued: ${album} (${tracks.length} tracks)`);
+  });
+  overlay.appendChild(addBtn);
+  artWrap.appendChild(overlay);
+
+  const info = document.createElement('div');
+  info.className = 'browse-card-info';
+  const albumEl = document.createElement('div');
+  albumEl.className = 'browse-card-album';
+  albumEl.textContent = album;
+  const artistEl = document.createElement('div');
+  artistEl.className = 'browse-card-artist';
+  artistEl.textContent = artist || `${tracks.length} track${tracks.length !== 1 ? 's' : ''}`;
+
+  info.append(albumEl, artistEl);
+  card.append(artWrap, info);
+
+  card.addEventListener('click', () => {
+    addToQueue(tracks);
+    setStatus(`queued: ${album} (${tracks.length} tracks)`);
+  });
+
+  return card;
+}
+
+function makeAlbumGridSection(title, albums, startOpen = true) {
+  const wrap = document.createElement('div');
+  wrap.className = 'browse-section';
+
+  const header = document.createElement('div');
+  header.className = 'browse-section-header';
+
+  const chevron = document.createElement('span');
+  chevron.className = 'history-chevron';
+  chevron.textContent = startOpen ? '▾' : '▸';
+
+  const label = document.createElement('span');
+  label.className = 'browse-section-label';
+  label.textContent = title;
+
+  const countEl = document.createElement('span');
+  countEl.className = 'browse-section-count';
+  countEl.textContent = albums.length;
+
+  header.append(chevron, label, countEl);
+
+  const body = document.createElement('div');
+  body.className = startOpen ? 'browse-section-body open' : 'browse-section-body';
+
+  header.addEventListener('click', () => {
+    const open = body.classList.toggle('open');
+    chevron.textContent = open ? '▾' : '▸';
+  });
+
+  const grid = document.createElement('div');
+  grid.className = 'browse-grid';
+  albums.forEach(a => grid.appendChild(makeAlbumCard(a)));
+  body.appendChild(grid);
+  wrap.append(header, body);
+  return wrap;
+}
+
+function makeBrowseTrackRow(t) {
+  const row = document.createElement('div');
+  row.className = 'browse-track-row';
+
+  const name = document.createElement('span');
+  name.className = 'browse-track-name';
+  name.textContent = stripTrackNum(t.name);
+
+  const sep = document.createElement('span');
+  sep.className = 'browse-track-sep';
+  sep.textContent = t.artist ? ' / ' : '';
+
+  const artist = document.createElement('span');
+  artist.className = 'browse-track-artist';
+  artist.textContent = t.artist || '';
+
+  row.append(name, sep, artist);
+  row.addEventListener('click', () => {
+    const wasEmpty = state.currentIndex === -1;
+    addToQueue([t]);
+    if (wasEmpty) {
+      const idx = state.tracks.findIndex(x => x.path === t.path);
+      if (idx >= 0) playIndex(idx);
+    }
+  });
+  return row;
+}
+
+function makeBrowseSection(title, tracks, startOpen = true) {
+  const wrap = document.createElement('div');
+  wrap.className = 'browse-section';
+
+  const header = document.createElement('div');
+  header.className = 'browse-section-header';
+
+  const chevron = document.createElement('span');
+  chevron.className = 'history-chevron';
+  chevron.textContent = startOpen ? '▾' : '▸';
+
+  const label = document.createElement('span');
+  label.className = 'browse-section-label';
+  label.textContent = title;
+
+  const countEl = document.createElement('span');
+  countEl.className = 'browse-section-count';
+  countEl.textContent = tracks.length;
+
+  const queueBtn = document.createElement('button');
+  queueBtn.className = 'cmd-btn';
+  queueBtn.textContent = 'queue';
+  queueBtn.title = `Add all ${title.toLowerCase()} to queue`;
+  queueBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    addToQueue(tracks);
+    setStatus(`added ${tracks.length} tracks from ${title.toLowerCase()}`);
+  });
+
+  header.append(chevron, label, countEl, queueBtn);
+
+  const body = document.createElement('div');
+  body.className = startOpen ? 'browse-section-body open' : 'browse-section-body';
+
+  header.addEventListener('click', () => {
+    const open = body.classList.toggle('open');
+    chevron.textContent = open ? '▾' : '▸';
+  });
+
+  tracks.forEach(t => body.appendChild(makeBrowseTrackRow(t)));
+  wrap.append(header, body);
+  return wrap;
+}
+
+async function renderBrowse(container = elSidebarBrowseTree) {
   container.innerHTML = '';
   if (!state.library.length) {
     const msg = document.createElement('div');
@@ -1519,38 +1798,54 @@ function renderBrowse(container = elSidebarBrowseTree) {
     return;
   }
 
-  const sorted = [...state.library].sort((a, b) =>
+  const journal = await window.electronAPI.getJournal();
+
+  // Play counts by path
+  const playCounts = new Map();
+  for (const plays of Object.values(journal)) {
+    for (const p of plays) {
+      playCounts.set(p.path, (playCounts.get(p.path) || 0) + 1);
+    }
+  }
+
+  // Top Tracks — most played
+  const topTracks = [...state.library]
+    .filter(t => playCounts.has(t.path))
+    .sort((a, b) => (playCounts.get(b.path) || 0) - (playCounts.get(a.path) || 0))
+    .slice(0, BROWSE_SECTION_LIMIT);
+
+  // Suggested — unplayed tracks, shuffled
+  const unplayed = state.library.filter(t => !playCounts.has(t.path));
+  for (let i = unplayed.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unplayed[i], unplayed[j]] = [unplayed[j], unplayed[i]];
+  }
+  const suggested = unplayed.slice(0, BROWSE_SECTION_LIMIT);
+
+  // Recently Added — newest mtime first
+  const recentlyAdded = [...state.library]
+    .filter(t => t.mtime)
+    .sort((a, b) => b.mtime - a.mtime)
+    .slice(0, BROWSE_SECTION_LIMIT);
+
+  // All Tracks — alphabetical
+  const allTracks = [...state.library].sort((a, b) =>
     stripTrackNum(a.name).toLowerCase().localeCompare(stripTrackNum(b.name).toLowerCase())
   );
 
   const frag = document.createDocumentFragment();
-  for (const t of sorted) {
-    const row = document.createElement('div');
-    row.className = 'browse-track-row';
+  if (topTracks.length)     frag.appendChild(makeBrowseSection('TOP TRACKS',     topTracks,    false));
+  if (suggested.length)     frag.appendChild(makeBrowseSection('RANDOM',         suggested,    false));
+  if (recentlyAdded.length) frag.appendChild(makeBrowseSection('RECENTLY ADDED', recentlyAdded, false));
+  if (allTracks.length)     frag.appendChild(makeBrowseSection('ALL TRACKS',     allTracks,    false));
 
-    const name = document.createElement('span');
-    name.className = 'browse-track-name';
-    name.textContent = stripTrackNum(t.name);
-
-    const sep = document.createElement('span');
-    sep.className = 'browse-track-sep';
-    sep.textContent = t.artist ? ' / ' : '';
-
-    const artist = document.createElement('span');
-    artist.className = 'browse-track-artist';
-    artist.textContent = t.artist || '';
-
-    row.append(name, sep, artist);
-    row.addEventListener('click', () => {
-      const wasEmpty = state.currentIndex === -1;
-      addToQueue([t]);
-      if (wasEmpty) {
-        const idx = state.tracks.findIndex(x => x.path === t.path);
-        if (idx >= 0) playIndex(idx);
-      }
-    });
-    frag.appendChild(row);
+  if (!frag.childNodes.length) {
+    const msg = document.createElement('div');
+    msg.className = 'browse-empty';
+    msg.textContent = 'no tracks found';
+    frag.appendChild(msg);
   }
+
   container.appendChild(frag);
 }
 
@@ -1609,87 +1904,159 @@ async function renderPlaylists() {
 const elHistoryList  = document.getElementById('history-list');
 const elHistoryEmpty = document.getElementById('history-empty');
 
+const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function makeDaySection(day, plays) {
+  const seen = new Set();
+  const unique = plays.filter(p => {
+    if (seen.has(p.path)) return false;
+    seen.add(p.path); return true;
+  });
+
+  const section = document.createElement('div');
+  section.className = 'history-day';
+
+  const header = document.createElement('div');
+  header.className = 'history-day-header';
+
+  const chevron = document.createElement('span');
+  chevron.className = 'history-chevron';
+  chevron.textContent = '▸';
+
+  const dateEl = document.createElement('span');
+  dateEl.className = 'history-day-date';
+  dateEl.textContent = formatJournalDate(day);
+
+  const countEl = document.createElement('span');
+  countEl.className = 'history-day-count';
+  countEl.textContent = `${plays.length} play${plays.length !== 1 ? 's' : ''}`;
+
+  const queueBtn = document.createElement('button');
+  queueBtn.className = 'cmd-btn';
+  queueBtn.textContent = 'queue';
+  queueBtn.title = 'Add this day to queue';
+  queueBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    addToQueue(unique);
+    setStatus(`added ${unique.length} tracks from ${formatJournalDate(day)}`);
+  });
+
+  header.append(chevron, dateEl, countEl, queueBtn);
+
+  const trackList = document.createElement('div');
+  trackList.className = 'history-tracks';
+
+  header.addEventListener('click', () => {
+    const open = trackList.classList.toggle('open');
+    chevron.textContent = open ? '▾' : '▸';
+  });
+
+  unique.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'history-track-row';
+
+    const name = document.createElement('span');
+    name.className = 'history-track-name';
+    name.textContent = stripTrackNum(p.name);
+
+    const artist = document.createElement('span');
+    artist.className = 'history-track-artist';
+    artist.textContent = p.artist || '';
+
+    row.append(name, artist);
+    row.addEventListener('click', () => {
+      const wasEmpty = state.currentIndex === -1;
+      addToQueue([p]);
+      if (wasEmpty) {
+        const idx = state.tracks.findIndex(x => x.path === p.path);
+        if (idx >= 0) playIndex(idx);
+      }
+    });
+    trackList.appendChild(row);
+  });
+
+  section.append(header, trackList);
+  return section;
+}
+
 async function renderHistory() {
   const journal = await window.electronAPI.getJournal();
   elHistoryList.innerHTML = '';
 
-  const days = Object.keys(journal).sort((a, b) => b.localeCompare(a)); // newest first
-  elHistoryEmpty.style.display = days.length ? 'none' : 'block';
+  const allDays = Object.keys(journal).sort((a, b) => b.localeCompare(a)); // newest first
+  elHistoryEmpty.style.display = allDays.length ? 'none' : 'block';
+  if (!allDays.length) return;
 
-  for (const day of days) {
-    const plays = journal[day];
+  // Group: year → month → [days]
+  const byYear = new Map();
+  for (const day of allDays) {
+    const [y, m] = day.split('-');
+    if (!byYear.has(y)) byYear.set(y, new Map());
+    const byMonth = byYear.get(y);
+    if (!byMonth.has(m)) byMonth.set(m, []);
+    byMonth.get(m).push(day);
+  }
 
-    // Deduplicate: unique tracks in order played
-    const seen = new Set();
-    const unique = plays.filter(p => {
-      if (seen.has(p.path)) return false;
-      seen.add(p.path); return true;
+  for (const [year, byMonth] of byYear) {
+    const yearSection = document.createElement('div');
+    yearSection.className = 'history-year';
+
+    const yearHeader = document.createElement('div');
+    yearHeader.className = 'history-year-header';
+
+    const yearChevron = document.createElement('span');
+    yearChevron.className = 'history-chevron';
+    yearChevron.textContent = '▾';
+
+    const yearLabel = document.createElement('span');
+    yearLabel.className = 'history-year-label';
+    yearLabel.textContent = year;
+
+    yearHeader.append(yearChevron, yearLabel);
+
+    const yearBody = document.createElement('div');
+    yearBody.className = 'history-year-body open';
+
+    yearHeader.addEventListener('click', () => {
+      const open = yearBody.classList.toggle('open');
+      yearChevron.textContent = open ? '▾' : '▸';
     });
 
-    const section = document.createElement('div');
-    section.className = 'history-day';
+    for (const [month, days] of byMonth) {
+      const monthSection = document.createElement('div');
+      monthSection.className = 'history-month';
 
-    const header = document.createElement('div');
-    header.className = 'history-day-header';
+      const monthHeader = document.createElement('div');
+      monthHeader.className = 'history-month-header';
 
-    const chevron = document.createElement('span');
-    chevron.className = 'history-chevron';
-    chevron.textContent = '▸';
+      const monthChevron = document.createElement('span');
+      monthChevron.className = 'history-chevron';
+      monthChevron.textContent = '▾';
 
-    const dateEl = document.createElement('span');
-    dateEl.className = 'history-day-date';
-    dateEl.textContent = formatJournalDate(day);
+      const monthLabel = document.createElement('span');
+      monthLabel.className = 'history-month-label';
+      monthLabel.textContent = MONTH_NAMES[parseInt(month, 10) - 1];
 
-    const countEl = document.createElement('span');
-    countEl.className = 'history-day-count';
-    countEl.textContent = `${plays.length} play${plays.length !== 1 ? 's' : ''}`;
+      monthHeader.append(monthChevron, monthLabel);
 
-    const queueBtn = document.createElement('button');
-    queueBtn.className = 'cmd-btn';
-    queueBtn.textContent = 'queue';
-    queueBtn.title = 'Add this day to queue';
-    queueBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      addToQueue(unique);
-      setStatus(`added ${unique.length} tracks from ${formatJournalDate(day)}`);
-    });
+      const monthBody = document.createElement('div');
+      monthBody.className = 'history-month-body open';
 
-    header.append(chevron, dateEl, countEl, queueBtn);
-
-    const trackList = document.createElement('div');
-    trackList.className = 'history-tracks';
-
-    header.addEventListener('click', () => {
-      const open = trackList.classList.toggle('open');
-      chevron.textContent = open ? '▾' : '▸';
-    });
-
-    unique.forEach(p => {
-      const row = document.createElement('div');
-      row.className = 'history-track-row';
-
-      const name = document.createElement('span');
-      name.className = 'history-track-name';
-      name.textContent = stripTrackNum(p.name);
-
-      const artist = document.createElement('span');
-      artist.className = 'history-track-artist';
-      artist.textContent = p.artist || '';
-
-      row.append(name, artist);
-      row.addEventListener('click', () => {
-        const wasEmpty = state.currentIndex === -1;
-        addToQueue([p]);
-        if (wasEmpty) {
-          const idx = state.tracks.findIndex(x => x.path === p.path);
-          if (idx >= 0) playIndex(idx);
-        }
+      monthHeader.addEventListener('click', () => {
+        const open = monthBody.classList.toggle('open');
+        monthChevron.textContent = open ? '▾' : '▸';
       });
-      trackList.appendChild(row);
-    });
 
-    section.append(header, trackList);
-    elHistoryList.appendChild(section);
+      for (const day of days) {
+        monthBody.appendChild(makeDaySection(day, journal[day]));
+      }
+
+      monthSection.append(monthHeader, monthBody);
+      yearBody.appendChild(monthSection);
+    }
+
+    yearSection.append(yearHeader, yearBody);
+    elHistoryList.appendChild(yearSection);
   }
 }
 
