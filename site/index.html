@@ -101,11 +101,8 @@
       width: 100%;
     }
 
-    .download-group label {
-      font-size: 0.7rem;
-      letter-spacing: 0.1em;
-      color: var(--amber-dim);
-      text-align: center;
+    .dl-item {
+      width: 100%;
     }
 
     .dl-btn {
@@ -131,9 +128,48 @@
       color: var(--bg);
     }
 
+    .dl-item.open .dl-btn {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: var(--bg);
+    }
+
     .dl-btn .dl-arch {
       opacity: 0.6;
       font-size: 0.7rem;
+    }
+
+    .dl-panel {
+      display: grid;
+      grid-template-rows: 0fr;
+      border: 1px solid var(--amber-dim);
+      border-top: none;
+      transition: grid-template-rows 0.25s ease;
+    }
+
+    .dl-item.open .dl-panel {
+      grid-template-rows: 1fr;
+    }
+
+    .dl-panel-inner {
+      overflow: hidden;
+    }
+
+    .dl-link {
+      display: block;
+      padding: 0.6rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--amber-dim);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      text-align: center;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .dl-link:hover {
+      background: var(--amber-dim);
+      color: var(--bg);
     }
 
     #bmc-link {
@@ -167,19 +203,32 @@
         No subscriptions, no cloud, no accounts.
       </p>
       <div class="download-group">
-        <label>&gt; download for macOS — free &nbsp;<span id="dl-total"></span></label>
-        <a class="dl-btn" href="Empeethree-1.0.0-arm64.dmg" download data-file="arm64">
-          <span>&gt; Apple Silicon</span>
-          <span class="dl-arch">M1 / M2 / M3 / M4</span>
-        </a>
-        <a class="dl-btn" href="Empeethree-1.0.0.dmg" download data-file="x64">
-          <span>&gt; Intel Mac</span>
-          <span class="dl-arch">x86_64</span>
-        </a>
+        <div class="dl-item">
+          <button class="dl-btn" type="button" aria-expanded="false">
+            <span>&gt; Apple Silicon</span>
+            <span class="dl-arch">M1 / M2 / M3 / M4</span>
+          </button>
+          <div class="dl-panel">
+            <div class="dl-panel-inner">
+              <a class="dl-link" href="Empeethree-1.0.0-arm64.dmg" download>&gt; Empeethree-1.0.0-arm64.dmg_</a>
+            </div>
+          </div>
+        </div>
+        <div class="dl-item">
+          <button class="dl-btn" type="button" aria-expanded="false">
+            <span>&gt; Intel Mac</span>
+            <span class="dl-arch">x86_64</span>
+          </button>
+          <div class="dl-panel">
+            <div class="dl-panel-inner">
+              <a class="dl-link" href="Empeethree-1.0.0.dmg" download>&gt; Empeethree-1.0.0.dmg_</a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <a id="bmc-link" href="https://buymeacoffee.com/jjjjustin" target="_blank" rel="noopener">
-      &gt; buy me a coffee_
+      &gt; Donate_
     </a>
   </div>
 
@@ -425,25 +474,21 @@
     document.fonts.ready.then(() => {
       drawGlyphs();
       requestAnimationFrame(() => renderLogoCanvas(revealLogo, 0.22, null, null, null));
-      loadCount();
     });
 
-    // ── DOWNLOAD COUNTER ─────────────────────────────────────────────────────
-    async function loadCount() {
-      try {
-        const res = await fetch('/api/download-count?file=arm64');
-        const data = await res.json();
-        const total = (data.arm64 ?? 0) + (data.x64 ?? 0);
-        document.getElementById('dl-total').textContent =
-          '— ' + total.toLocaleString() + ' download' + (total === 1 ? '' : 's');
-      } catch (_) {}
-    }
-
-    document.querySelectorAll('.dl-btn').forEach(btn => {
+    // ── DOWNLOAD ACCORDION ───────────────────────────────────────────────────
+    document.querySelectorAll('.dl-item').forEach(item => {
+      const btn = item.querySelector('.dl-btn');
       btn.addEventListener('click', () => {
-        fetch('/api/download-count?file=' + btn.dataset.file, { method: 'POST' })
-          .then(() => loadCount())
-          .catch(() => {});
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.dl-item.open').forEach(other => {
+          other.classList.remove('open');
+          other.querySelector('.dl-btn').setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen) {
+          item.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
       });
     });
 
