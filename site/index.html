@@ -16,28 +16,16 @@
       --bg: #0e0e0e;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     html, body {
-      width: 100%; height: 100%;
+      width: 100%; min-height: 100%;
       background: var(--bg);
       font-family: 'JetBrains Mono', monospace;
       color: var(--amber);
-      overflow: hidden;
-    }
-
-    /* scanline overlay */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 2px,
-        rgba(0,0,0,0.12) 2px,
-        rgba(0,0,0,0.12) 4px
-      );
-      pointer-events: none;
-      z-index: 100;
+      overflow-x: hidden;
     }
 
     /* ── GLYPH CANVAS ── */
@@ -52,13 +40,137 @@
     /* ── REVEAL ── */
     #reveal {
       display: flex;
-      position: fixed;
-      inset: 0;
+      position: relative;
+      min-height: 100vh;
+      width: 100%;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 0;
       z-index: 5;
+    }
+
+    /* scanline overlay — hero only */
+    #reveal::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0,0,0,0.12) 2px,
+        rgba(0,0,0,0.12) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* ── SCREENSHOTS (marketing section) ── */
+    #screenshots {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      background: var(--amber);
+      padding: 5rem 1.5rem 6rem;
+    }
+
+    .screenshots-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    #screenshots h2 {
+      font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: var(--bg);
+      text-align: center;
+      margin-bottom: 0.7rem;
+    }
+
+    .screenshots-sub {
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      color: rgba(14, 14, 14, 0.65);
+      text-align: center;
+      max-width: 480px;
+      margin: 0 auto 3.5rem;
+      line-height: 1.7;
+    }
+
+    .shot-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .shot-image {
+      background: var(--bg);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .shot-image:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .shot-image img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .shot-info {
+      margin-top: 1.1rem;
+      text-align: center;
+    }
+
+    .shot-title {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--bg);
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+
+    .shot-desc {
+      display: block;
+      font-size: 0.72rem;
+      color: rgba(14, 14, 14, 0.65);
+      letter-spacing: 0.02em;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 720px) {
+      .shot-grid { grid-template-columns: 1fr; }
+      #screenshots { padding: 3.5rem 1.25rem 4.5rem; }
+    }
+
+    /* ── FOOTER ── */
+    #site-footer {
+      position: relative;
+      z-index: 5;
+      background: var(--bg);
+      padding: 3rem 1.5rem 2.5rem;
+      text-align: center;
+    }
+
+    #footer-logo-canvas {
+      display: block;
+      width: 220px;
+      max-width: 60%;
+      margin: 0 auto 1rem;
+    }
+
+    .footer-copy {
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      color: var(--amber-dim);
     }
 
     /* dark legibility box */
@@ -156,15 +268,25 @@
     }
 
     .dl-link {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 0.6rem 1rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.75rem;
       color: var(--amber-dim);
       text-decoration: none;
       letter-spacing: 0.05em;
-      text-align: center;
       transition: background 0.2s, color 0.2s;
+    }
+
+    .dl-link + .dl-link {
+      border-top: 1px solid var(--amber-dim);
+    }
+
+    .dl-link .dl-arch {
+      opacity: 0.6;
+      font-size: 0.68rem;
     }
 
     .dl-link:hover {
@@ -173,18 +295,24 @@
     }
 
     #bmc-link {
-      display: block;
-      margin-top: 0.9rem;
+      display: inline-block;
+      margin-bottom: 1.4rem;
+      padding: 0.55rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 0.7rem;
       letter-spacing: 0.1em;
       color: var(--amber-dim);
+      border: 1px solid var(--amber-dim);
+      border-radius: 4px;
       text-decoration: none;
       text-align: center;
-      transition: color 0.2s;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
     }
 
     #bmc-link:hover {
-      color: var(--amber);
+      background: var(--amber-dim);
+      border-color: var(--amber-dim);
+      color: var(--bg);
     }
   </style>
 </head>
@@ -202,35 +330,73 @@
         Plays your local files.<br />
         No subscriptions, no cloud, no accounts.
       </p>
-      <div class="download-group">
+      <div class="download-group" id="download">
         <div class="dl-item">
           <button class="dl-btn" type="button" aria-expanded="false">
-            <span>&gt; Apple Silicon</span>
-            <span class="dl-arch">M1 / M2 / M3 / M4</span>
+            <span>&gt; Download for macOS</span>
           </button>
           <div class="dl-panel">
             <div class="dl-panel-inner">
-              <a class="dl-link" href="Empeethree-1.0.0-arm64.dmg" download>&gt; Empeethree-1.0.0-arm64.dmg_</a>
-            </div>
-          </div>
-        </div>
-        <div class="dl-item">
-          <button class="dl-btn" type="button" aria-expanded="false">
-            <span>&gt; Intel Mac</span>
-            <span class="dl-arch">x86_64</span>
-          </button>
-          <div class="dl-panel">
-            <div class="dl-panel-inner">
-              <a class="dl-link" href="Empeethree-1.0.0.dmg" download>&gt; Empeethree-1.0.0.dmg_</a>
+              <a class="dl-link" href="Empeethree-1.0.0-arm64.dmg" download>
+                <span>Apple Silicon</span>
+                <span class="dl-arch">M1 / M2 / M3 / M4</span>
+              </a>
+              <a class="dl-link" href="Empeethree-1.0.0.dmg" download>
+                <span>Intel Mac</span>
+                <span class="dl-arch">x86_64</span>
+              </a>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <a id="bmc-link" href="https://buymeacoffee.com/jjjjustin" target="_blank" rel="noopener">
-      &gt; Donate_
-    </a>
   </div>
+
+  <!-- screenshots -->
+  <section id="screenshots">
+    <div class="screenshots-inner">
+      <h2>Just press play</h2>
+      <p class="screenshots-sub">A well-designed player, built for people who still own their music.</p>
+      <div class="shot-grid">
+        <figure class="shot">
+          <div class="shot-image">
+            <img src="screenshot-player.png" alt="Empeethree now playing view with waveform visualizer" loading="lazy" />
+          </div>
+          <figcaption class="shot-info">
+            <span class="shot-title">Now Playing</span>
+            <span class="shot-desc">Real-time waveform + frequency visualizer, driven by the Web Audio API.</span>
+          </figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="shot-image">
+            <img src="screenshot-search.png" alt="Empeethree library search results" loading="lazy" />
+          </div>
+          <figcaption class="shot-info">
+            <span class="shot-title">Instant Search</span>
+            <span class="shot-desc">Find any artist, album, or track across your whole library in a keystroke.</span>
+          </figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="shot-image">
+            <img src="screenshot-shortcuts.png" alt="Empeethree keyboard shortcuts panel" loading="lazy" />
+          </div>
+          <figcaption class="shot-info">
+            <span class="shot-title">Keyboard-First</span>
+            <span class="shot-desc">Play, seek, and adjust volume without ever touching the mouse.</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer id="site-footer">
+    <canvas id="footer-logo-canvas"></canvas>
+    <a id="bmc-link" href="https://buymeacoffee.com/jjjjustin" target="_blank" rel="noopener">
+      Donate
+    </a>
+    <p class="footer-copy">&copy; 2026 Empeethree. All rights reserved.</p>
+  </footer>
 
   <script>
     // ── AMBER THEME ────────────────────────────────────────────────────────────
@@ -470,10 +636,12 @@
 
     // ── START ─────────────────────────────────────────────────────────────────
     const revealLogo = document.getElementById('reveal-logo-canvas');
+    const footerLogo = document.getElementById('footer-logo-canvas');
 
     document.fonts.ready.then(() => {
       drawGlyphs();
       requestAnimationFrame(() => renderLogoCanvas(revealLogo, 0.22, null, null, null));
+      requestAnimationFrame(() => renderLogoCanvas(footerLogo, 0.22, null, null, null));
     });
 
     // ── DOWNLOAD ACCORDION ───────────────────────────────────────────────────
